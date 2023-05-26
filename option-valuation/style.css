@@ -78,3 +78,7 @@ td{
     border: 1px solid #ccc;
     border-top: none;
   }
+
+  .graph-out {
+    background-color:aliceblue;
+  }

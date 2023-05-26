@@ -60,12 +60,13 @@ var chartOptions;
 var chartOptionPnLs;
 // ------------- CALCULATIONS -----------------------------------------------------------------------------------------
 function render(){
-
     // clean off
     if(chartStocks != null)
       chartStocks.destroy();
     if(chartOptions != null)
       chartOptions.destroy();
+    if(chartOptionPnLs != null)
+      chartOptionPnLs.destroy();
 
     let T = txtDaysToExpiration.value/365;
     let S = txtStrike.value;
@@ -107,7 +108,6 @@ function render(){
         AddData(cfgOptionPnl,optionPnLSeries.Y[i]);
       }
       chartOptionsPnL = new Chart(ctxOptionPnl,cfgOptionPnl);
-
     }
 }
 
@@ -268,6 +268,7 @@ function GenerateOptionSeries(stockSeries){
   let S = txtStrike.value;
   let r = txtInterest.value / 100;
   let sigma = txtVolatility.value / 100;
+  let calPutMult = selCallPut.value;
 
   let Series = { X : [], Y : []};
   for(x = 0; x <= daysToExpiration; x++) {
@@ -282,8 +283,11 @@ function GenerateOptionSeries(stockSeries){
       let K = stockSeries.Y[i][x];
       let calcResultString = calcOptionMetrics(S,K,sigma,x/365,r);
       let objResult        = JSON.parse(calcResultString);
+      
       let P = objResult.C;
-      console.info("K: " + K + "P: " + P);
+      if(calPutMult == "-1")
+        P = objResult.P;  
+      
       littleSeries.push(P);
     }
     Series.Y.push(littleSeries);
@@ -299,6 +303,7 @@ function GenerateOptionPnLSeries(optionSeries) {
   let r = txtInterest.value / 100;
   let sigma = txtVolatility.value / 100;
   let T = txtDaysToExpiration.value;
+  let calPutMult = selCallPut.value;
 
   let Series = { X : [], Y : []};
   for(x = 0; x <= T; x++) {
@@ -309,6 +314,8 @@ function GenerateOptionPnLSeries(optionSeries) {
   let calcResultString = calcOptionMetrics(S,K,sigma,T/365,r);
   let objResult        = JSON.parse(calcResultString);
   let Price = objResult.C;
+  if(calPutMult == "-1")
+    Price = objResult.P;
 
   for(let i = 0; i < nLines; i++){
     let littleSeries = [];
