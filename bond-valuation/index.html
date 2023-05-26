@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Bond Caclulator</title>
+</head>
+<body onload="onLoad()">
+    <div class="container">
+        <div class="data-entry">
+            <label for="face-value-input">Face Value: </label>
+            <input id="face-value-input" type="text" value="1000.00">
+        </div>
+        <div class="data-entry">
+            <label for="coupon-input">Coupon: </label>
+            <input id="coupon-input" type="text" value="6.00">
+        </div>
+        <div class="data-entry">
+            <label for="maturity-input">Maturity: </label>
+            <input id="maturity-input" type="date" value="2025-01-01">
+        </div>
+        <div class="data-entry">
+            <label for="rating-input">Bond Rating</label>
+            <select id="rating-input" onChange="ratingChange()">
+                <option value="Treasury">Treasury</option>
+                <option value="Aaa">Aaa</option>
+                <option value="Aa1">Aa1</option>
+                <option value="Aa2">Aa2</option>
+                <option value="Aa3">Aa3</option>
+                <option value="A1">A1</option>
+                <option value="A2">A2</option>
+                <option value="A3">A3</option>
+                <option value="Baa1">Baa1</option>
+                <option value="Baa2">Baa2</option>
+                <option value="Baa3">Baa3</option>
+                <option value="Ba1">Ba1</option>
+                <option value="Ba2">Ba2</option>
+                <option value="Ba3">Ba3</option>
+                <option value="B1">B1</option>
+                <option value="B2">B2</option>
+                <option value="B3">B3</option>
+                <option value="Caa1">Caa1</option>
+            </select>
+        </div>
+        <div class="data-in-out">
+            <label for="price-input">Price: </label>
+            <div>
+                <input id="price-input" type="number">
+                <input id="price-option" type="checkbox" checked="true">
+            </div>
+        </div>
+        <div class="data-in-out">
+            <label for="yield-input">Yield (%): </label>
+            <div>
+                <input id="yield-input" type="number" disabled>
+                <input id="yield-option" type="checkbox">
+            </div>
+        </div>
+        <button onclick="calculate()">Calculate</button>
+        <br>
+        <div class="data-in-out">
+            <label for="duration">Duration:</label>
+            <input id="duration" disabled></textarea>
+        </div>        
+        <br>
+        <br>
+        <div id="rate-table" class="rates">
+        </div>
+    </div>
+    <script src="script.js" ></script>
+</body>
+</html>
