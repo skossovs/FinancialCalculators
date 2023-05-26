@@ -18,6 +18,8 @@ const txtProjectedPricePercenatage = document.getElementById("projected-percenta
 txtExpiration.addEventListener("input", updateExpirationDays);
 txtProjectedPrice.addEventListener("input", updateProjectedPricePercenatage);
 
+const colorsArray = ["rgb(11,7,243)", "rgb(21,151,4)", "rgb(21,151,4,0.8)", "rgb(21,151,4,0.6)", "rgb(21,151,4,0.4)", "rgb(241,42,7)", "rgb(241,42,7,0.8)", "rgb(241,42,7,0.6)", "rgb(241,42,7,0.4)" ];
+
 
 function updateProjectedPricePercenatage(){
   let calPutMult = selCallPut.value;
@@ -85,7 +87,7 @@ function render(){
       let cfg = CreateConfig();
       AddLabels(cfg, labels);
       for(i = 0; i<stockSeries.Y.length; i++){
-        AddData(cfg,stockSeries.Y[i]);
+        AddData(cfg, stockSeries.Y[i], colorsArray[i]);
       }
       chartStocks = new Chart(ctx,cfg);
       
@@ -95,7 +97,7 @@ function render(){
       let cfgOption = CreateConfig();
       AddLabels(cfgOption, labels);
       for(i = 0; i<optionSeries.Y.length; i++){
-        AddData(cfgOption,optionSeries.Y[i]);
+        AddData(cfgOption, optionSeries.Y[i], colorsArray[i]);
       }
       chartOptions = new Chart(ctxOption,cfgOption);
 
@@ -105,7 +107,7 @@ function render(){
       let cfgOptionPnl = CreateConfig();
       AddLabels(cfgOptionPnl, labels);
       for(i = 0; i<optionPnLSeries.Y.length; i++){
-        AddData(cfgOptionPnl,optionPnLSeries.Y[i]);
+        AddData(cfgOptionPnl, optionPnLSeries.Y[i], colorsArray[i]);
       }
       chartOptionsPnL = new Chart(ctxOptionPnl,cfgOptionPnl);
     }
@@ -151,9 +153,7 @@ function calcOptionMetrics(S,K,sigma,T,r){
 
   let C = K * Math.exp(-q * T) * Nd1       - S * Math.exp(-r * T) * Nd2;
   let P = S * Math.exp(-r * T) * Nd2_minus - K * Math.exp(-q * T) * Nd1_minus;
-  //return C;
   return JSON.stringify({C, P});
-  //return JSON.stringify({C, d1, d2});
 }
 
 // ------------------------------------   GRAPHs ----------------------------------------
@@ -189,18 +189,23 @@ function CreateConfig(){
   return config;
 }
 function AddLabels(c, x){
-  c.data.labels = x
+  c.data.labels = x;
 }
 function AddData(c, y){
-  let borderColorIndex = c.data.datasets.length;
-
   var r = Math.floor(Math.random() * 255);
   var g = Math.floor(Math.random() * 255);
   var b = Math.floor(Math.random() * 255);
   var colr = "rgb(" + r + "," + g + "," + b + ")";
+  AddData(c,y,colr);
+}
 
+function AddData(c, y, colr){
+  let percentageMax  = Math.round(txtProjectedPricePercenatage.value);
+  let percentageStep = Math.round(txtProjectedPricePercenatage.value / 5);
+
+  let borderColorIndex = c.data.datasets.length;
   let datasetItem = {
-    label: borderColorIndex,
+    label:  Math.round(percentageMax - percentageStep * borderColorIndex) + '%',
     data: y,
     fill: false,
     borderColor: colr,
@@ -217,7 +222,7 @@ function GenerateStockSeries()
   let P0               = txtSpot.value;
   let percentageStep   = 2 * maxPercentage/(nLines - 1);
   let percentage = 0;
-  let Series = { X : [], Y : []};
+  let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   
   //kx + C = y
   // k = P0 * perc / Days,   C = (1 - perc) * P0
@@ -278,8 +283,6 @@ function GenerateOptionSeries(stockSeries){
   for(let i = 0; i < nLines; i++){
     let littleSeries = [];
     for(x = 0; x <= daysToExpiration; x++) {
-      console.info("Coordinates");
-      console.info("i:" + i + " x:" + x);
       let K = stockSeries.Y[i][x];
       let calcResultString = calcOptionMetrics(S,K,sigma,x/365,r);
       let objResult        = JSON.parse(calcResultString);
@@ -327,4 +330,11 @@ function GenerateOptionPnLSeries(optionSeries) {
   }
 
   return Series;  
+}
+
+function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
+  const crossTable = document.getElementById("cross-table");
+
+
+
 }
