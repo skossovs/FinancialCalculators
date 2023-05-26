@@ -18,7 +18,7 @@ const txtProjectedPricePercenatage = document.getElementById("projected-percenta
 txtExpiration.addEventListener("input", updateExpirationDays);
 txtProjectedPrice.addEventListener("input", updateProjectedPricePercenatage);
 
-const colorsArray = ["rgb(11,7,243)", "rgb(21,151,4)", "rgb(21,151,4,0.8)", "rgb(21,151,4,0.6)", "rgb(21,151,4,0.4)", "rgb(241,42,7)", "rgb(241,42,7,0.8)", "rgb(241,42,7,0.6)", "rgb(241,42,7,0.4)" ];
+const colorsArray = [ "rgb(21,151,4)", "rgb(21,151,4,0.8)", "rgb(21,151,4,0.6)", "rgb(21,151,4,0.4)", "rgb(21,151,4,0.2)", "rgb(11,7,243)", "rgb(241,42,7)", "rgb(241,42,7,0.8)", "rgb(241,42,7,0.6)", "rgb(241,42,7,0.4)", "rgb(241,42,7,0.2)" ];
 
 
 function updateProjectedPricePercenatage(){
@@ -80,6 +80,8 @@ function render(){
     // ************ THIS IF is FOR DEBUGGING PURPOSES ONLY *******************************
     if(txtSpot.value != txtProjectedPrice.value){
       // Display graphs
+      let LC = GenerateLabelsAndColors();
+
       // Stock Series
       let stockSeries = GenerateStockSeries();
       let ctx = document.getElementById('StockSeriesChart');
@@ -87,7 +89,7 @@ function render(){
       let cfg = CreateConfig();
       AddLabels(cfg, labels);
       for(i = 0; i<stockSeries.Y.length; i++){
-        AddData(cfg, stockSeries.Y[i], colorsArray[i]);
+        AddData(cfg, stockSeries.Y[i], LC.Colors[i], LC.Labels[i]);
       }
       chartStocks = new Chart(ctx,cfg);
       
@@ -97,7 +99,7 @@ function render(){
       let cfgOption = CreateConfig();
       AddLabels(cfgOption, labels);
       for(i = 0; i<optionSeries.Y.length; i++){
-        AddData(cfgOption, optionSeries.Y[i], colorsArray[i]);
+        AddData(cfgOption, optionSeries.Y[i], LC.Colors[i], LC.Labels[i]);
       }
       chartOptions = new Chart(ctxOption,cfgOption);
 
@@ -107,10 +109,29 @@ function render(){
       let cfgOptionPnl = CreateConfig();
       AddLabels(cfgOptionPnl, labels);
       for(i = 0; i<optionPnLSeries.Y.length; i++){
-        AddData(cfgOptionPnl, optionPnLSeries.Y[i], colorsArray[i]);
+        AddData(cfgOptionPnl, optionPnLSeries.Y[i], LC.Colors[i], LC.Labels[i]);
       }
       chartOptionsPnL = new Chart(ctxOptionPnl,cfgOptionPnl);
     }
+}
+
+function GenerateLabelsAndColors()
+{
+  let percentageMax  = Math.round(txtProjectedPricePercenatage.value);
+  let percentageStep = Math.round(txtProjectedPricePercenatage.value / 5);
+  let labels = [null,null,null,null,null,null,null,null,null,null,null];
+  
+  // labels
+  for (let i=0; i<5; i++){
+    let labelValue = Math.round(percentageMax - percentageStep * i) + '%';
+    labels[i] = labelValue;
+  }
+  labels[5] = '0%';
+  for (let i=6; i<11; i++){
+    let labelValue = Math.round(-percentageMax + percentageStep * i) + '%';
+    labels[i] = labelValue;
+  }
+  return {Labels: labels, Colors: colorsArray};
 }
 
 // https://mathjs.org/docs/reference/functions/erf.html - all math
@@ -196,24 +217,28 @@ function AddData(c, y){
   var g = Math.floor(Math.random() * 255);
   var b = Math.floor(Math.random() * 255);
   var colr = "rgb(" + r + "," + g + "," + b + ")";
-  AddData(c,y,colr);
-}
-
-function AddData(c, y, colr){
+  
+  // calculate label
+  let borderColorIndex = c.data.datasets.length;
   let percentageMax  = Math.round(txtProjectedPricePercenatage.value);
   let percentageStep = Math.round(txtProjectedPricePercenatage.value / 5);
+  let labelValue = Math.round(percentageMax - percentageStep * borderColorIndex) + '%';
+  AddData(c,y,colr,labelValue);
+}
 
-  let borderColorIndex = c.data.datasets.length;
+function AddData(c, y,colr,labelValue){
   let datasetItem = {
-    label:  Math.round(percentageMax - percentageStep * borderColorIndex) + '%',
-    data: y,
-    fill: false,
+    label: labelValue,
+    data:  y,
+    fill:  false,
     borderColor: colr,
     tension: 0.1
   };
   c.data.datasets.push(datasetItem);
 }
 //---------------------------------------------------------------------------------------------
+
+
 function GenerateStockSeries()
 {
   let nLines = 11; // middle line is always zero price change
@@ -230,18 +255,6 @@ function GenerateStockSeries()
     Series.X.push(x);
   }
 
-  // stock gains value
-  for(i = 0; i < (nLines - 1)/2; i++){
-    percentage = percentage + percentageStep;
-    C = (1 + percentage) * P0;
-    K = - P0 * percentage/daysToExpiration;
-    let littleSeries = [];
-    for(x = 0; x <= daysToExpiration; x++) {
-      let P = K * x + C;
-      littleSeries.push(P);
-    }
-    Series.Y.push(littleSeries);
-  }
   // stock loses value
   percentage = percentage + percentageStep;
   for(i = 0; i < (nLines - 1)/2; i++){
@@ -255,14 +268,27 @@ function GenerateStockSeries()
         P = 0.01; // Can't have negative price for stock
       littleSeries.push(P);
     }
-    Series.Y.push(littleSeries);
+    Series.Y[6 + i] = littleSeries;
   }
+  // stock gains value
+  for(i = 0; i < (nLines - 1)/2; i++){
+    percentage = percentage + percentageStep;
+    C = (1 + percentage) * P0;
+    K = - P0 * percentage/daysToExpiration;
+    let littleSeries = [];
+    for(x = 0; x <= daysToExpiration; x++) {
+      let P = K * x + C;
+      littleSeries.push(P);
+    }
+    Series.Y[i] = littleSeries;
+  }
+
   let littleSeries = [];
   // central series
   for(x = 0; x <= daysToExpiration; x++) {
     littleSeries.push(P0);
   }
-  Series.Y.push(littleSeries);
+  Series.Y[5] = littleSeries;
 
   return Series;
 }
@@ -275,7 +301,7 @@ function GenerateOptionSeries(stockSeries){
   let sigma = txtVolatility.value / 100;
   let calPutMult = selCallPut.value;
 
-  let Series = { X : [], Y : []};
+  let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   for(x = 0; x <= daysToExpiration; x++) {
     Series.X.push(x);
   }
@@ -293,7 +319,7 @@ function GenerateOptionSeries(stockSeries){
       
       littleSeries.push(P);
     }
-    Series.Y.push(littleSeries);
+    Series.Y[i] = littleSeries;
   }
 
   return Series;
@@ -308,7 +334,7 @@ function GenerateOptionPnLSeries(optionSeries) {
   let T = txtDaysToExpiration.value;
   let calPutMult = selCallPut.value;
 
-  let Series = { X : [], Y : []};
+  let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   for(x = 0; x <= T; x++) {
     Series.X.push(x);
   }
@@ -326,7 +352,7 @@ function GenerateOptionPnLSeries(optionSeries) {
       let pnl = optionSeries.Y[i][x] - Price;
       littleSeries.push(pnl);
     }
-    Series.Y.push(littleSeries);
+    Series.Y[i] = littleSeries;
   }
 
   return Series;  
