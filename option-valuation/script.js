@@ -18,7 +18,7 @@ const txtProjectedPricePercenatage = document.getElementById("projected-percenta
 txtExpiration.addEventListener("input", updateExpirationDays);
 txtProjectedPrice.addEventListener("input", updateProjectedPricePercenatage);
 
-const colorsArray = [ "rgb(21,151,4)", "rgb(21,151,4,0.8)", "rgb(21,151,4,0.6)", "rgb(21,151,4,0.4)", "rgb(21,151,4,0.2)", "rgb(11,7,243)", "rgb(241,42,7)", "rgb(241,42,7,0.8)", "rgb(241,42,7,0.6)", "rgb(241,42,7,0.4)", "rgb(241,42,7,0.2)" ];
+const colorsArray = [ "rgb(21,151,4)", "rgb(21,151,4,0.8)", "rgb(21,151,4,0.6)", "rgb(21,151,4,0.4)", "rgb(21,151,4,0.2)", "rgb(11,7,243)", "rgb(241,42,7,0.2)", "rgb(241,42,7,0.4)", "rgb(241,42,7,0.6)", "rgb(241,42,7,0.8)", "rgb(241,42,7)" ];
 
 
 function updateProjectedPricePercenatage(){
@@ -237,10 +237,27 @@ function AddData(c, y,colr,labelValue){
   c.data.datasets.push(datasetItem);
 }
 //---------------------------------------------------------------------------------------------
+function* GeneratePathPercentages()
+{
+  let nLines = 11; // middle line is always zero price change
+  let maxPercentage    = txtProjectedPricePercenatage.value / 100;
+  let minPercentage    = - maxPercentage;
+  let percentageStep   = 2 * maxPercentage/(nLines - 1);
+  let middleIndex      = (nLines - 1)/2;
 
+  for(let i=0; i<nLines; i++){
+    if(i == middleIndex)
+      yield 0;
+    else
+      yield minPercentage + percentageStep * i;
+  }
+
+}
 
 function GenerateStockSeries()
 {
+  const iterator = GeneratePathPercentages();
+
   let nLines = 11; // middle line is always zero price change
   let daysToExpiration = txtDaysToExpiration.value;
   let maxPercentage    = txtProjectedPricePercenatage.value / 100;
@@ -255,12 +272,14 @@ function GenerateStockSeries()
     Series.X.push(x);
   }
 
-  // stock loses value
-  percentage = percentage + percentageStep;
-  for(i = 0; i < (nLines - 1)/2; i++){
-    percentage = percentage - percentageStep;
-    C = (1 - percentage) * P0;
-    K =   P0 * percentage/daysToExpiration;
+  let i = 0;
+  let isDone = false;
+  while(isDone == false){
+    let val = iterator.next();
+    percentage = val.value;
+    isDone = val.done;
+    C = (1 + percentage) * P0;
+    K =  - P0 * percentage/daysToExpiration;
     let littleSeries = [];
     for(x = 0; x <= daysToExpiration; x++) {
       let P = K * x + C;
@@ -268,27 +287,10 @@ function GenerateStockSeries()
         P = 0.01; // Can't have negative price for stock
       littleSeries.push(P);
     }
-    Series.Y[6 + i] = littleSeries;
-  }
-  // stock gains value
-  for(i = 0; i < (nLines - 1)/2; i++){
-    percentage = percentage + percentageStep;
-    C = (1 + percentage) * P0;
-    K = - P0 * percentage/daysToExpiration;
-    let littleSeries = [];
-    for(x = 0; x <= daysToExpiration; x++) {
-      let P = K * x + C;
-      littleSeries.push(P);
-    }
     Series.Y[i] = littleSeries;
+    i++;
   }
 
-  let littleSeries = [];
-  // central series
-  for(x = 0; x <= daysToExpiration; x++) {
-    littleSeries.push(P0);
-  }
-  Series.Y[5] = littleSeries;
 
   return Series;
 }
