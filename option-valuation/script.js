@@ -18,12 +18,12 @@ const txtProjectedPricePercenatage = document.getElementById("projected-percenta
 txtExpiration.addEventListener("input", updateExpirationDays);
 txtProjectedPrice.addEventListener("input", updateProjectedPricePercenatage);
 
-const colorsArray = [ "rgb(21,151,4)", "rgb(21,151,4,0.8)", "rgb(21,151,4,0.6)", "rgb(21,151,4,0.4)", "rgb(21,151,4,0.2)", "rgb(11,7,243)", "rgb(241,42,7,0.2)", "rgb(241,42,7,0.4)", "rgb(241,42,7,0.6)", "rgb(241,42,7,0.8)", "rgb(241,42,7)" ];
+const colorsArray = ["rgb(241,42,7)", "rgb(241,42,7,0.8)", "rgb(241,42,7,0.6)", "rgb(241,42,7,0.4)", "rgb(241,42,7,0.2)", "rgb(11,7,243)", "rgb(21,151,4,0.2)", "rgb(21,151,4,0.4)", "rgb(21,151,4,0.6)", "rgb(21,151,4,0.8)", "rgb(21,151,4)" ];
 
 
 function updateProjectedPricePercenatage(){
   let calPutMult = selCallPut.value;
-  txtProjectedPricePercenatage.value = calPutMult * 100 * (txtProjectedPrice.value - txtSpot.value)/txtSpot.value;
+  txtProjectedPricePercenatage.value = (calPutMult * 100 * (txtProjectedPrice.value - txtSpot.value)/txtSpot.value).toFixed(2);
 }
 
 function updateExpirationDays(){
@@ -75,7 +75,13 @@ function render(){
     let K = txtSpot.value;
     let r = txtInterest.value / 100;
     let sigma = txtVolatility.value / 100;
-    txtOptionPrice.value = calcOptionMetrics(S,K,sigma,T,r);
+
+    let optionMetricsStr = calcOptionMetrics(S,K,sigma,T,r);
+    let optionMetrics    = JSON.parse(optionMetricsStr);
+    if(selCallPut.value == "-1")
+      txtOptionPrice.value = optionMetrics.P.toFixed(2);
+    else
+      txtOptionPrice.value = optionMetrics.C.toFixed(2);
 
     // ************ THIS IF is FOR DEBUGGING PURPOSES ONLY *******************************
     if(txtSpot.value != txtProjectedPrice.value){
@@ -117,20 +123,30 @@ function render(){
 
 function GenerateLabelsAndColors()
 {
-  let percentageMax  = Math.round(txtProjectedPricePercenatage.value);
-  let percentageStep = Math.round(txtProjectedPricePercenatage.value / 5);
   let labels = [null,null,null,null,null,null,null,null,null,null,null];
-  
-  // labels
-  for (let i=0; i<5; i++){
-    let labelValue = Math.round(percentageMax - percentageStep * i) + '%';
+  const iterator = GeneratePathPercentages();
+
+  let i = 0;
+  let isDone = false;
+  while(isDone == false && i < 11){
+    let val = iterator.next();
+    let percentage = val.value * 100;
+    isDone = val.done;
+    let labelValue = parseFloat(percentage).toFixed(2) + '%';
     labels[i] = labelValue;
+    i++;
   }
-  labels[5] = '0%';
-  for (let i=6; i<11; i++){
-    let labelValue = Math.round(-percentageMax + percentageStep * i) + '%';
-    labels[i] = labelValue;
-  }
+
+  // // labels
+  // for (let i=0; i<5; i++){
+  //   let labelValue = Math.round(percentageMax - percentageStep * i) + '%';
+  //   labels[i] = labelValue;
+  // }
+  // labels[5] = '0%';
+  // for (let i=6; i<11; i++){
+  //   let labelValue = Math.round(-percentageMax + percentageStep * i) + '%';
+  //   labels[i] = labelValue;
+  // }
   return {Labels: labels, Colors: colorsArray};
 }
 
@@ -186,7 +202,6 @@ function onUnLoad(){
   // // alert(WinNetwork.UserName);
   // document.cookie = "username=John Doe; expires=" + cookieExpirationDate;
 }
-
 function onLoad(){
 
 }
@@ -225,7 +240,6 @@ function AddData(c, y){
   let labelValue = Math.round(percentageMax - percentageStep * borderColorIndex) + '%';
   AddData(c,y,colr,labelValue);
 }
-
 function AddData(c, y,colr,labelValue){
   let datasetItem = {
     label: labelValue,
@@ -257,12 +271,8 @@ function* GeneratePathPercentages()
 function GenerateStockSeries()
 {
   const iterator = GeneratePathPercentages();
-
-  let nLines = 11; // middle line is always zero price change
   let daysToExpiration = txtDaysToExpiration.value;
-  let maxPercentage    = txtProjectedPricePercenatage.value / 100;
   let P0               = txtSpot.value;
-  let percentageStep   = 2 * maxPercentage/(nLines - 1);
   let percentage = 0;
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   
@@ -273,11 +283,11 @@ function GenerateStockSeries()
   }
 
   let i = 0;
-  let isDone = false;
-  while(isDone == false){
+  while(true){
     let val = iterator.next();
     percentage = val.value;
-    isDone = val.done;
+    if(val.done == true)
+      break;
     C = (1 + percentage) * P0;
     K =  - P0 * percentage/daysToExpiration;
     let littleSeries = [];
@@ -290,7 +300,6 @@ function GenerateStockSeries()
     Series.Y[i] = littleSeries;
     i++;
   }
-
 
   return Series;
 }
