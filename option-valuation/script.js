@@ -14,6 +14,8 @@ const txtSpot = document.getElementById("spot-input");
 const txtOptionPrice = document.getElementById("option-price-input");
 const txtProjectedPrice = document.getElementById("projected-input");
 const txtProjectedPricePercenatage = document.getElementById("projected-percentage-input");
+const txtDelta = document.getElementById("option-delta-input");
+const txtTheta = document.getElementById("option-theta-input");
 
 txtExpiration.addEventListener("input", updateExpirationDays);
 txtProjectedPrice.addEventListener("input", updateProjectedPricePercenatage);
@@ -79,9 +81,18 @@ function render(){
     let optionMetricsStr = calcOptionMetrics(S,K,sigma,T,r);
     let optionMetrics    = JSON.parse(optionMetricsStr);
     if(selCallPut.value == "-1")
+    {
       txtOptionPrice.value = optionMetrics.P.toFixed(2);
+      txtDelta.value       = optionMetrics.Dp.toFixed(4);
+      txtTheta.value       = optionMetrics.ThetaP.toFixed(4);
+    }
     else
+    {
       txtOptionPrice.value = optionMetrics.C.toFixed(2);
+      txtDelta.value       = optionMetrics.Dc.toFixed(4);
+      txtTheta.value       = optionMetrics.ThetaC.toFixed(4);
+    }
+      
 
     // ************ THIS IF is FOR DEBUGGING PURPOSES ONLY *******************************
     if(txtSpot.value != txtProjectedPrice.value){
@@ -136,17 +147,6 @@ function GenerateLabelsAndColors()
     labels[i] = labelValue;
     i++;
   }
-
-  // // labels
-  // for (let i=0; i<5; i++){
-  //   let labelValue = Math.round(percentageMax - percentageStep * i) + '%';
-  //   labels[i] = labelValue;
-  // }
-  // labels[5] = '0%';
-  // for (let i=6; i<11; i++){
-  //   let labelValue = Math.round(-percentageMax + percentageStep * i) + '%';
-  //   labels[i] = labelValue;
-  // }
   return {Labels: labels, Colors: colorsArray};
 }
 
@@ -164,6 +164,7 @@ function calcOptionMetrics(S,K,sigma,T,r){
     console.info(d1);console.info(d2);
   }
 
+  let Nd1_derivative = (1/Math.sqrt(2*Math.PI)) * Math.exp(-d1*d1/2);
   let Nd1       = 0.5 + 0.5 * math.erf(d1/sqrt2);
   let Nd2       = 0.5 + 0.5 * math.erf(d2/sqrt2);
 
@@ -188,9 +189,17 @@ function calcOptionMetrics(S,K,sigma,T,r){
     console.info(K*Math.exp(-q * T));
   }
 
-  let C = K * Math.exp(-q * T) * Nd1       - S * Math.exp(-r * T) * Nd2;
-  let P = S * Math.exp(-r * T) * Nd2_minus - K * Math.exp(-q * T) * Nd1_minus;
-  return JSON.stringify({C, P});
+  let C  = K * Math.exp(-q * T) * Nd1       - S * Math.exp(-r * T) * Nd2;
+  let P  = S * Math.exp(-r * T) * Nd2_minus - K * Math.exp(-q * T) * Nd1_minus;
+  //https://www.macroption.com/black-scholes-formula/#delta
+  let expQT =  Math.exp(-q * T);
+  let expRT =  Math.exp(-r * T);
+  let Dc = expQT * Nd1;
+  let Dp = expQT * Nd1_minus;
+  // Theta
+  let ThetaC = (-0.5*S*sigma*expQT*Nd1_derivative/Math.sqrt(T) - r*K*expRT*Nd2 + q*S*expQT*Nd1)/365;
+  let ThetaP = (-0.5*S*sigma*expQT*Nd1_derivative/Math.sqrt(T) + r*K*expRT*Nd2_minus - q*S*expQT*Nd1_minus)/365;
+  return JSON.stringify({C, P, Dc, Dp, ThetaC, ThetaP});
 }
 
 // ------------------------------------   GRAPHs ----------------------------------------
@@ -265,7 +274,6 @@ function* GeneratePathPercentages()
     else
       yield minPercentage + percentageStep * i;
   }
-
 }
 
 function GenerateStockSeries()
@@ -360,7 +368,7 @@ function GenerateOptionPnLSeries(optionSeries) {
   for(let i = 0; i < nLines; i++){
     let littleSeries = [];
     for(x = 0; x <= T; x++) {
-      let pnl = optionSeries.Y[i][x] - Price;
+      let pnl =  (optionSeries.Y[i][x] - Price);
       littleSeries.push(pnl);
     }
     Series.Y[i] = littleSeries;
