@@ -4,6 +4,8 @@ Date.prototype.addDays = function(days) {
   return date;
 }
 
+
+const nLines = 11;
 const selCallPut = document.getElementById("call-put-select");
 const txtExpiration = document.getElementById("expiration-input");
 const txtInterest = document.getElementById("interest-input");
@@ -128,12 +130,14 @@ function render(){
       for(i = 0; i<optionPnLSeries.Y.length; i++){
         AddData(cfgOptionPnl, optionPnLSeries.Y[i], LC.Colors[i], LC.Labels[i]);
       }
-      chartOptionsPnL = new Chart(ctxOptionPnl,cfgOptionPnl);
+      chartOptionPnLs = new Chart(ctxOptionPnl,cfgOptionPnl);
+
+      // Cross Table
+      GenerateCrossTable(stockSeries, optionSeries, openSeries);
     }
 }
 
-function GenerateLabelsAndColors()
-{
+function GenerateLabelsAndColors(){
   let labels = [null,null,null,null,null,null,null,null,null,null,null];
   const iterator = GeneratePathPercentages();
 
@@ -148,6 +152,31 @@ function GenerateLabelsAndColors()
     i++;
   }
   return {Labels: labels, Colors: colorsArray};
+}
+
+function GenerateAxisForTable(){
+  let P0 = txtSpot.value;
+  let daysToExpiration = txtDaysToExpiration.value;
+  let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
+  
+  //kx + C = y
+  // k = P0 * perc / Days,   C = (1 - perc) * P0
+  for(x = 0; x <= daysToExpiration; x++) {
+    Series.X.push(x);
+  }
+  
+  const iterator = GeneratePathPercentages();
+  let i = 0;
+  let isDone = false;
+  while(isDone == false && i < 11){
+    let val = iterator.next();
+    let price = (1 + val.value) * P0;
+    isDone = val.done;
+    Series.Y[i] = price.toFixed(2);
+    i++;
+  }
+
+  return Series;
 }
 
 // https://mathjs.org/docs/reference/functions/erf.html - all math
@@ -262,7 +291,6 @@ function AddData(c, y,colr,labelValue){
 //---------------------------------------------------------------------------------------------
 function* GeneratePathPercentages()
 {
-  let nLines = 11; // middle line is always zero price change
   let maxPercentage    = txtProjectedPricePercenatage.value / 100;
   let minPercentage    = - maxPercentage;
   let percentageStep   = 2 * maxPercentage/(nLines - 1);
@@ -313,7 +341,6 @@ function GenerateStockSeries()
 }
 
 function GenerateOptionSeries(stockSeries){
-  let nLines = 11;
   let daysToExpiration = txtDaysToExpiration.value;
   let S = txtStrike.value;
   let r = txtInterest.value / 100;
@@ -345,7 +372,7 @@ function GenerateOptionSeries(stockSeries){
 }
 
 function GenerateOptionPnLSeries(optionSeries) {
-  let nLines = 11;
+
   let S = txtStrike.value;
   let K = txtSpot.value;
   let r = txtInterest.value / 100;
@@ -377,9 +404,26 @@ function GenerateOptionPnLSeries(optionSeries) {
   return Series;  
 }
 
+getMethods = (obj) => Object.getOwnPropertyNames(obj).filter(item => typeof obj[item] === 'function')
+
 function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
   const crossTable = document.getElementById("cross-table");
+  // clear old data
+  crossTable.innerHTML = "";
+  let axisSeries = GenerateAxisForTable();
 
+  let header = crossTable.createTHead();
+  let row = header.insertRow(0);
 
+  axisSeries.Y.forEach( item => {
+    let cell = row.insertCell(0);
+    cell.innerHTML = item;
+  });
+  // Insert a row at the end of the table
+  axisSeries.X.forEach(item => {
+    row = crossTable.insertRow(-1);
+    let cell = row.insertCell(0);
+    cell.innerHTML = item;
+  });
 
 }
