@@ -85,3 +85,8 @@ td{
     background-color:whitesmoke;
     width: 100%;
   }
+
+  .cross-table{
+    background-color: whitesmoke;
+    border: 2px solid lightgray;
+  }

@@ -407,6 +407,12 @@ function GenerateOptionPnLSeries(optionSeries) {
 getMethods = (obj) => Object.getOwnPropertyNames(obj).filter(item => typeof obj[item] === 'function')
 
 function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
+
+  let S = txtStrike.value;
+  let r = txtInterest.value / 100;
+  let sigma = txtVolatility.value / 100;
+  let calPutMult = selCallPut.value;
+
   const crossTable = document.getElementById("cross-table");
   // clear old data
   crossTable.innerHTML = "";
@@ -415,15 +421,30 @@ function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
   let header = crossTable.createTHead();
   let row = header.insertRow(0);
 
+  // Y - price, X - days
+  // columns is being populated with stock prices
   axisSeries.Y.forEach( item => {
     let cell = row.insertCell(0);
     cell.innerHTML = item;
   });
-  // Insert a row at the end of the table
-  axisSeries.X.forEach(item => {
-    row = crossTable.insertRow(-1);
-    let cell = row.insertCell(0);
-    cell.innerHTML = item;
-  });
 
+  // rows is being populated with days
+  axisSeries.X.forEach(days => {
+    row = crossTable.insertRow(-1);
+    // row header
+    let cell = row.insertCell(0);
+    cell.innerHTML = days;
+
+    axisSeries.Y.forEach( spot => {
+      let calcResultString = calcOptionMetrics(S, spot, sigma, days/365, r);
+      let objResult        = JSON.parse(calcResultString);
+      
+      let P = objResult.C;
+      if(calPutMult == "-1")
+        P = objResult.P;  
+
+      cell           = row.insertCell(0);
+      cell.innerHTML = P.toFixed(2);
+    });
+  });
 }
