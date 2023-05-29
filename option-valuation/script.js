@@ -371,6 +371,22 @@ function GenerateOptionSeries(stockSeries){
   return Series;
 }
 
+function CalcInitialOptionPrice(){
+  let S = txtStrike.value;
+  let K = txtSpot.value;
+  let r = txtInterest.value / 100;
+  let sigma = txtVolatility.value / 100;
+  let T = txtDaysToExpiration.value;
+  let calPutMult = selCallPut.value;
+
+  let calcResultString = calcOptionMetrics(S,K,sigma,T/365,r);
+  let objResult        = JSON.parse(calcResultString);
+  let Price = objResult.C;
+  if(calPutMult == "-1")
+    Price = objResult.P;
+  return Price;
+}
+
 function GenerateOptionPnLSeries(optionSeries) {
 
   let S = txtStrike.value;
@@ -386,11 +402,7 @@ function GenerateOptionPnLSeries(optionSeries) {
   }
 
   // current option price
-  let calcResultString = calcOptionMetrics(S,K,sigma,T/365,r);
-  let objResult        = JSON.parse(calcResultString);
-  let Price = objResult.C;
-  if(calPutMult == "-1")
-    Price = objResult.P;
+  let Price = CalcInitialOptionPrice();
 
   for(let i = 0; i < nLines; i++){
     let littleSeries = [];
@@ -407,7 +419,7 @@ function GenerateOptionPnLSeries(optionSeries) {
 getMethods = (obj) => Object.getOwnPropertyNames(obj).filter(item => typeof obj[item] === 'function')
 
 function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
-
+  let Spot0 = txtSpot.value;
   let S = txtStrike.value;
   let r = txtInterest.value / 100;
   let sigma = txtVolatility.value / 100;
@@ -417,6 +429,8 @@ function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
   // clear old data
   crossTable.innerHTML = "";
   let axisSeries = GenerateAxisForTable();
+
+  let InitialOptionPrice = CalcInitialOptionPrice();  // initial option price
 
   let header = crossTable.createTHead();
   let row = header.insertRow(0);
@@ -444,12 +458,28 @@ function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
       let calcResultString = calcOptionMetrics(S, spot, sigma, days/365, r);
       let objResult        = JSON.parse(calcResultString);
       
-      let P = objResult.C;
+      // TODO: sometimes result is null. need to test
+      let P = objResult.C ?? 0.00;
       if(calPutMult == "-1")
-        P = objResult.P ?? 0.00;  // TODO: sometimes result is null. need to test
+        P = objResult.P ?? 0.00;  
+      let Delta = objResult.Dc ?? 0.00;
+      if(calPutMult == "-1")
+        Delta = objResult.Dp ?? 0.00;
 
       cell           = row.insertCell(0);
-      cell.innerHTML = P.toFixed(2);
+      let cell_table = document.createElement("table");
+      let cell_row0  = cell_table.insertRow(-1);
+      let innerCell0 = cell_row0.insertCell(0);
+      innerCell0.innerHTML = (P - InitialOptionPrice).toFixed(2);
+      let innerCell1 = cell_row0.insertCell(0);
+      innerCell1.innerHTML = P.toFixed(2);
+      let cell_row1  = cell_table.insertRow(-1);
+      let innerCell2 = cell_row1.insertCell(0);
+      innerCell2.innerHTML = (spot - Spot0).toFixed(2);
+      let innerCell3 = cell_row1.insertCell(0);
+      innerCell3.innerHTML = Delta.toFixed(2);
+
+      cell.innerHTML = cell_table.outerHTML; //P.toFixed(2);
       if(isCellDark){
         if(isCellDark0)
           cell.classList.add('t-cell-dark');
