@@ -7,6 +7,7 @@ Date.prototype.addDays = function(days) {
 
 const nLines = 11;
 const selCallPut = document.getElementById("call-put-select");
+const selBuySell = document.getElementById("buy-sell-select");
 const txtExpiration = document.getElementById("expiration-input");
 const txtInterest = document.getElementById("interest-input");
 const txtDaysToExpiration = document.getElementById("days-to-expiration-input");
@@ -75,12 +76,13 @@ function render(){
       chartOptionPnLs.destroy();
 
     let T = txtDaysToExpiration.value/365;
+    let bs = selBuySell.value;
     let S = txtStrike.value;
     let K = txtSpot.value;
     let r = txtInterest.value / 100;
     let sigma = txtVolatility.value / 100;
 
-    let optionMetricsStr = calcOptionMetrics(S,K,sigma,T,r);
+    let optionMetricsStr = calcOptionMetrics(S,K,sigma,T,r,0,bs);
     let optionMetrics    = JSON.parse(optionMetricsStr);
     if(selCallPut.value == "-1")
     {
@@ -133,7 +135,7 @@ function render(){
       chartOptionPnLs = new Chart(ctxOptionPnl,cfgOptionPnl);
 
       // Cross Table
-      GenerateCrossTable(stockSeries, optionSeries, openSeries);
+      GenerateCrossTable();
     }
 }
 
@@ -181,8 +183,8 @@ function GenerateAxisForTable(){
 
 // https://mathjs.org/docs/reference/functions/erf.html - all math
 // formulas: https://www.macroption.com/black-scholes-excel/
-function calcOptionMetrics(S,K,sigma,T,r){
-  let q = 0; // dividend yield
+function calcOptionMetrics(S,K,sigma,T,r,q,bs){
+  q = 0; // dividend yield
   let sqrt2 = Math.sqrt(2);
   let d1 = (Math.log(K/S) + T * (r - q + (sigma*sigma)/2))/(sigma*Math.sqrt(T));
   let d2 = d1 - sigma * Math.sqrt(T);
@@ -228,6 +230,12 @@ function calcOptionMetrics(S,K,sigma,T,r){
   // Theta
   let ThetaC = (-0.5*S*sigma*expQT*Nd1_derivative/Math.sqrt(T) - r*K*expRT*Nd2 + q*S*expQT*Nd1)/365;
   let ThetaP = (-0.5*S*sigma*expQT*Nd1_derivative/Math.sqrt(T) + r*K*expRT*Nd2_minus - q*S*expQT*Nd1_minus)/365;
+  // Buy Or Sell 1 or -1
+  if(bs == -1){
+    C = -C; P = -P;
+    Dc = -Dc; Dp = -Dp;
+    ThetaC = -ThetaC; ThetaP = -ThetaP;
+  }
   return JSON.stringify({C, P, Dc, Dp, ThetaC, ThetaP});
 }
 
@@ -343,6 +351,7 @@ function GenerateStockSeries()
 function GenerateOptionSeries(stockSeries){
   let daysToExpiration = txtDaysToExpiration.value;
   let S = txtStrike.value;
+  let bs = selBuySell.value;
   let r = txtInterest.value / 100;
   let sigma = txtVolatility.value / 100;
   let calPutMult = selCallPut.value;
@@ -356,7 +365,7 @@ function GenerateOptionSeries(stockSeries){
     let littleSeries = [];
     for(x = 0; x <= daysToExpiration; x++) {
       let K = stockSeries.Y[i][x];
-      let calcResultString = calcOptionMetrics(S,K,sigma,x/365,r);
+      let calcResultString = calcOptionMetrics(S,K,sigma,x/365,r,0,bs);
       let objResult        = JSON.parse(calcResultString);
       
       let P = objResult.C;
@@ -374,12 +383,13 @@ function GenerateOptionSeries(stockSeries){
 function CalcInitialOptionPrice(){
   let S = txtStrike.value;
   let K = txtSpot.value;
+  let bs = selBuySell.value;
   let r = txtInterest.value / 100;
   let sigma = txtVolatility.value / 100;
   let T = txtDaysToExpiration.value;
   let calPutMult = selCallPut.value;
 
-  let calcResultString = calcOptionMetrics(S,K,sigma,T/365,r);
+  let calcResultString = calcOptionMetrics(S,K,sigma,T/365,r,0,bs);
   let objResult        = JSON.parse(calcResultString);
   let Price = objResult.C;
   if(calPutMult == "-1")
@@ -418,9 +428,10 @@ function GenerateOptionPnLSeries(optionSeries) {
 
 getMethods = (obj) => Object.getOwnPropertyNames(obj).filter(item => typeof obj[item] === 'function')
 
-function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
+function GenerateCrossTable() {
   let Spot0 = txtSpot.value;
   let S = txtStrike.value;
+  let bs = selBuySell.value;
   let r = txtInterest.value / 100;
   let sigma = txtVolatility.value / 100;
   let calPutMult = selCallPut.value;
@@ -455,7 +466,7 @@ function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
     let isCellDark = false;
 
     axisSeries.Y.forEach( spot => {
-      let calcResultString = calcOptionMetrics(S, spot, sigma, days/365, r);
+      let calcResultString = calcOptionMetrics(S, spot, sigma, days/365, r, 0, bs);
       let objResult        = JSON.parse(calcResultString);
       
       // TODO: sometimes result is null. need to test
