@@ -425,15 +425,20 @@ function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
   // columns is being populated with stock prices
   axisSeries.Y.forEach( item => {
     let cell = row.insertCell(0);
+    cell.classList.add('t-vertical');
     cell.innerHTML = item;
   });
 
+
+  let isCellDark0 = false;
   // rows is being populated with days
   axisSeries.X.forEach(days => {
     row = crossTable.insertRow(-1);
     // row header
     let cell = row.insertCell(0);
+    cell.classList.add('t-horizontal'); // row headers are styled here
     cell.innerHTML = days;
+    let isCellDark = false;
 
     axisSeries.Y.forEach( spot => {
       let calcResultString = calcOptionMetrics(S, spot, sigma, days/365, r);
@@ -441,10 +446,22 @@ function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
       
       let P = objResult.C;
       if(calPutMult == "-1")
-        P = objResult.P;  
+        P = objResult.P ?? 0.00;  // TODO: sometimes result is null. need to test
 
       cell           = row.insertCell(0);
       cell.innerHTML = P.toFixed(2);
+      if(isCellDark){
+        if(isCellDark0)
+          cell.classList.add('t-cell-dark');
+        else
+          cell.classList.add('t-cell-dark-light');
+      }
+      else if(isCellDark0)
+        cell.classList.add('t-cell-dark-light');
+
+      isCellDark = !isCellDark;
     });
+
+    isCellDark0 = !isCellDark0;
   });
 }

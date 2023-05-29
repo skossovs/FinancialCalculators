@@ -89,4 +89,21 @@ td{
   .cross-table{
     background-color: whitesmoke;
     border: 2px solid lightgray;
+    border-spacing: 2px;
+  }
+
+  .t-vertical{
+    border-bottom: 2px solid brown;
+  }
+
+  .t-horizontal{
+    border-left: 2px solid brown;
+  }
+
+  .t-cell-dark{
+    background-color: greenyellow;
+  }
+
+  .t-cell-dark-light{
+    background-color: rgba(172, 255, 47, 0.336);
   }
