@@ -479,7 +479,7 @@ function GenerateCrossTable(stockSeries, optionSeries, optionPnLSeries) {
       let innerCell3 = cell_row1.insertCell(0);
       innerCell3.innerHTML = Delta.toFixed(2);
 
-      cell.innerHTML = cell_table.outerHTML; //P.toFixed(2);
+      cell.innerHTML = cell_table.outerHTML;
       if(isCellDark){
         if(isCellDark0)
           cell.classList.add('t-cell-dark');
