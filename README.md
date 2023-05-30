@@ -31,7 +31,7 @@ Same as previous, but shows up how much profit/loss is made.
 indicates 4 measures per one cell: Option Price, Option Expected PnL, Delta and Stock Expected PnL. X - Stock Price and Y - Days to expiration or Days to closing position.
 ![CrossTableSnapshot](CrossTableSnapshot.PNG)
 ### Installation
-No installation is required, just copy paste Index.html, script.js and style.css in any folder and open with a browser. I deliberately left all the code in script.js so the Index.html can be run without any additional hosting applications. From the architecture standpoint it is better to have the code properly separated by it's functionality.
+No installation is required, just copy paste Index.html, script.js and style.css from option-valuation folder in any folder on your computer and open with a browser. I deliberately left all the code in script.js so the Index.html can be run without any additional hosting applications. From the architecture standpoint it is better to have the code properly separated by it's functionality.
 ### Future Features
 - Need to have a capability to hedge first leg option with the second leg option. It will open oportunity to build vertical spreads and straddles
 - Need to implement the case when holding period is greater than expiration day for one of the legs. That will open opportunity to build calendar spread.
