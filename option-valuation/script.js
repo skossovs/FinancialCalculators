@@ -4,7 +4,6 @@ Date.prototype.addDays = function(days) {
   return date;
 }
 
-
 const nLines = 11;
 const selCallPut = document.getElementById("call-put-select");
 const selBuySell = document.getElementById("buy-sell-select");
@@ -68,6 +67,12 @@ var chartOptions;
 var chartOptionPnLs;
 // ------------- CALCULATIONS -----------------------------------------------------------------------------------------
 function render(){
+    
+  if(Number(txtHoldingPeriod.value) > Number(txtDaysToExpiration.value)) {
+    window.alert("Holding period is greater than days to option expiration");
+    return;
+  }
+
     // clean off
     if(chartStocks != null)
       chartStocks.destroy();
@@ -77,6 +82,7 @@ function render(){
       chartOptionPnLs.destroy();
 
     let T = txtDaysToExpiration.value/365;
+    
     let bs = selBuySell.value;
     let S = txtStrike.value;
     let K = txtSpot.value;
