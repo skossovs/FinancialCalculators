@@ -98,46 +98,44 @@ function render(){
       txtDelta.value       = optionMetrics.Dc.toFixed(4);
       txtTheta.value       = optionMetrics.ThetaC.toFixed(4);
     }
+    
+    // Display graphs
+    let LC = GenerateLabelsAndColors();
 
-    // ************ THIS IF is FOR DEBUGGING PURPOSES ONLY *******************************
-    if(txtSpot.value != txtProjectedPrice.value){
-      // Display graphs
-      let LC = GenerateLabelsAndColors();
-
-      // Stock Series
-      let stockSeries = GenerateStockSeries();
-      let ctx = document.getElementById('StockSeriesChart');
-      const labels = stockSeries.X;
-      let cfg = CreateConfig();
-      AddLabels(cfg, labels);
-      for(i = 0; i<stockSeries.Y.length; i++){
-        AddData(cfg, stockSeries.Y[i], LC.Colors[i], LC.Labels[i]);
-      }
-      chartStocks = new Chart(ctx,cfg);
-      
-      // Option Series
-      let optionSeries = GenerateOptionSeries(stockSeries);
-      let ctxOption = document.getElementById('OptionSeriesChart');
-      let cfgOption = CreateConfig();
-      AddLabels(cfgOption, labels);
-      for(i = 0; i<optionSeries.Y.length; i++){
-        AddData(cfgOption, optionSeries.Y[i], LC.Colors[i], LC.Labels[i]);
-      }
-      chartOptions = new Chart(ctxOption,cfgOption);
-
-      // Option PnLSeries
-      let optionPnLSeries = GenerateOptionPnLSeries(optionSeries);
-      let ctxOptionPnl = document.getElementById('OptionPnLSeriesChart');
-      let cfgOptionPnl = CreateConfig();
-      AddLabels(cfgOptionPnl, labels);
-      for(i = 0; i<optionPnLSeries.Y.length; i++){
-        AddData(cfgOptionPnl, optionPnLSeries.Y[i], LC.Colors[i], LC.Labels[i]);
-      }
-      chartOptionPnLs = new Chart(ctxOptionPnl,cfgOptionPnl);
-
-      // Cross Table
-      GenerateCrossTable();
+    // Stock Series
+    let stockSeries = GenerateStockSeries();
+    let ctx = document.getElementById('StockSeriesChart');
+    const labels = stockSeries.X;
+    let cfg = CreateConfig();
+    AddLabels(cfg, labels);
+    for(i = 0; i<stockSeries.Y.length; i++){
+      AddData(cfg, stockSeries.Y[i], LC.Colors[i], LC.Labels[i]);
     }
+    chartStocks = new Chart(ctx,cfg);
+    
+    // Option Series
+    let optionSeries = GenerateOptionSeries(stockSeries);
+    let ctxOption = document.getElementById('OptionSeriesChart');
+    let cfgOption = CreateConfig();
+    AddLabels(cfgOption, labels);
+    for(i = 0; i<optionSeries.Y.length; i++){
+      AddData(cfgOption, optionSeries.Y[i], LC.Colors[i], LC.Labels[i]);
+    }
+    chartOptions = new Chart(ctxOption,cfgOption);
+
+    // Option PnLSeries
+    let optionPnLSeries = GenerateOptionPnLSeries(optionSeries);
+    let ctxOptionPnl = document.getElementById('OptionPnLSeriesChart');
+    let cfgOptionPnl = CreateConfig();
+    AddLabels(cfgOptionPnl, labels);
+    for(i = 0; i<optionPnLSeries.Y.length; i++){
+      AddData(cfgOptionPnl, optionPnLSeries.Y[i], LC.Colors[i], LC.Labels[i]);
+    }
+    chartOptionPnLs = new Chart(ctxOptionPnl,cfgOptionPnl);
+
+    // Cross Table
+    GenerateCrossTable();
+    
 }
 
 function GenerateLabelsAndColors(){
@@ -159,15 +157,23 @@ function GenerateLabelsAndColors(){
 
 function GenerateAxisForTable(){
   let P0 = txtSpot.value;
-  let daysToExpiration = txtDaysToExpiration.value;
+  let daysToExpiration = Number(txtDaysToExpiration.value);
+  let holdingPeriod    = Number(txtHoldingPeriod.value);
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   
-  //kx + C = y
-  // k = P0 * perc / Days,   C = (1 - perc) * P0
-  for(x = 0; x <= daysToExpiration; x++) {
-    Series.X.push(x);
+  if (holdingPeriod == daysToExpiration) {
+    //kx + C = y
+    // k = P0 * perc / Days,   C = (1 - perc) * P0
+    for(x = 0; x <= daysToExpiration; x++) {
+      Series.X.push(x);
+    }
   }
-  
+  if (holdingPeriod < daysToExpiration) {
+    for(x = 0; x <= holdingPeriod; x++) {
+      Series.X.push(x);
+    }
+  }
+
   const iterator = GeneratePathPercentages();
   let i = 0;
   let isDone = false;
@@ -318,41 +324,69 @@ function* GeneratePathPercentages()
 function GenerateStockSeries()
 {
   const iterator = GeneratePathPercentages();
-  let daysToExpiration = txtDaysToExpiration.value;
+  let daysToExpiration = Number(txtDaysToExpiration.value);
+  let holdingPeriod    = Number(txtHoldingPeriod.value);
   let P0               = txtSpot.value;
   let percentage = 0;
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   
-  //kx + C = y
-  // k = P0 * perc / Days,   C = (1 - perc) * P0
-  for(x = 0; x <= daysToExpiration; x++) {
-    Series.X.push(x);
-  }
-
-  let i = 0;
-  while(true){
-    let val = iterator.next();
-    percentage = val.value;
-    if(val.done == true)
-      break;
-    C = (1 + percentage) * P0;
-    K =  - P0 * percentage/daysToExpiration;
-    let littleSeries = [];
+  if (holdingPeriod == daysToExpiration) {
+    //kx + C = y
+    // k = P0 * perc / Days,   C = (1 - perc) * P0
     for(x = 0; x <= daysToExpiration; x++) {
-      let P = K * x + C;
-      if(P<0)
-        P = 0.01; // Can't have negative price for stock
-      littleSeries.push(P);
+      Series.X.push(x);
     }
-    Series.Y[i] = littleSeries;
-    i++;
-  }
 
+    let i = 0;
+    while(true){
+      let val = iterator.next();
+      percentage = val.value;
+      if(val.done == true)
+        break;
+      C = (1 + percentage) * P0;
+      K =  - P0 * percentage/daysToExpiration;
+      let littleSeries = [];
+      for(x = 0; x <= daysToExpiration; x++) {
+        let P = K * x + C;
+        if(P<0)
+          P = 0.01; // Can't have negative price for stock
+        littleSeries.push(P);
+      }
+      Series.Y[i] = littleSeries;
+      i++;
+    }
+  }
+  else if(holdingPeriod < daysToExpiration)
+  {
+    for(x = 0; x <= holdingPeriod; x++) {
+      Series.X.push(x);
+    }
+
+    let i = 0;
+    while(true){
+      let val = iterator.next();
+      percentage = val.value;
+      if(val.done == true)
+        break;
+      C = (1 + percentage) * P0;
+      K =  - P0 * percentage/holdingPeriod;
+      let littleSeries = [];
+      for(x = 0; x <= holdingPeriod; x++) {
+        let P = K * x + C;
+        if(P<0)
+          P = 0.01; // Can't have negative price for stock
+        littleSeries.push(P);
+      }
+      Series.Y[i] = littleSeries;
+      i++;
+    }
+  }
   return Series;
 }
 
 function GenerateOptionSeries(stockSeries){
-  let daysToExpiration = txtDaysToExpiration.value;
+  let daysToExpiration = Number(txtDaysToExpiration.value);
+  let holdingPeriod    = Number(txtHoldingPeriod.value);
   let S = txtStrike.value;
   let bs = selBuySell.value;
   let r = txtInterest.value / 100;
@@ -360,24 +394,47 @@ function GenerateOptionSeries(stockSeries){
   let calPutMult = selCallPut.value;
 
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
-  for(x = 0; x <= daysToExpiration; x++) {
-    Series.X.push(x);
-  }
-
-  for(let i = 0; i < nLines; i++){
-    let littleSeries = [];
+  if (holdingPeriod == daysToExpiration) {
     for(x = 0; x <= daysToExpiration; x++) {
-      let K = stockSeries.Y[i][x];
-      let calcResultString = calcOptionMetrics(S,K,sigma,x/365,r,0,bs);
-      let objResult        = JSON.parse(calcResultString);
-      
-      let P = objResult.C;
-      if(calPutMult == "-1")
-        P = objResult.P;  
-      
-      littleSeries.push(P);
+      Series.X.push(x);
     }
-    Series.Y[i] = littleSeries;
+
+    for(let i = 0; i < nLines; i++){
+      let littleSeries = [];
+      for(x = 0; x <= daysToExpiration; x++) {
+        let K = stockSeries.Y[i][x];
+          let calcResultString = calcOptionMetrics(S,K,sigma,x/365,r,0,bs);
+          let objResult        = JSON.parse(calcResultString);
+        
+        let P = objResult.C;
+          if(calPutMult == "-1")
+            P = objResult.P;  
+        
+          littleSeries.push(P);
+        }
+      Series.Y[i] = littleSeries;
+    }
+  }
+  else if(holdingPeriod < daysToExpiration) {
+    for(x = 0; x <= holdingPeriod; x++) {
+      Series.X.push(x);
+    }
+    let expirationLeftOver = daysToExpiration - holdingPeriod;
+    for(let i = 0; i < nLines; i++){
+      let littleSeries = [];
+      for(x = 0; x <= holdingPeriod; x++) {
+        let K = stockSeries.Y[i][x];
+        let calcResultString = calcOptionMetrics(S,K,sigma,(x+expirationLeftOver)/365,r,0,bs);
+        let objResult        = JSON.parse(calcResultString);
+        
+        let P = objResult.C;
+          if(calPutMult == "-1")
+            P = objResult.P;  
+        
+          littleSeries.push(P);
+        }
+      Series.Y[i] = littleSeries;
+    }
   }
 
   return Series;
@@ -401,31 +458,41 @@ function CalcInitialOptionPrice(){
 }
 
 function GenerateOptionPnLSeries(optionSeries) {
-
   let S = txtStrike.value;
   let K = txtSpot.value;
   let r = txtInterest.value / 100;
   let sigma = txtVolatility.value / 100;
-  let T = txtDaysToExpiration.value;
+  let daysToExpiration = Number(txtDaysToExpiration.value);
+  let holdingPeriod    = Number(txtHoldingPeriod.value);
   let calPutMult = selCallPut.value;
 
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
-  for(x = 0; x <= T; x++) {
+  for(x = 0; x <= holdingPeriod; x++) {
     Series.X.push(x);
   }
 
   // current option price
   let Price = CalcInitialOptionPrice();
-
-  for(let i = 0; i < nLines; i++){
-    let littleSeries = [];
-    for(x = 0; x <= T; x++) {
-      let pnl =  (optionSeries.Y[i][x] - Price);
-      littleSeries.push(pnl);
+  if (holdingPeriod == daysToExpiration) {
+    for(let i = 0; i < nLines; i++){
+      let littleSeries = [];
+      for(x = 0; x <= daysToExpiration; x++) {
+        let pnl =  (optionSeries.Y[i][x] - Price);
+        littleSeries.push(pnl);
+      }
+      Series.Y[i] = littleSeries;
     }
-    Series.Y[i] = littleSeries;
   }
-
+  else if(holdingPeriod < daysToExpiration){
+    for(let i = 0; i < nLines; i++){
+      let littleSeries = [];
+      for(x = 0; x <= holdingPeriod; x++) {
+        let pnl =  (optionSeries.Y[i][x] - Price);
+        littleSeries.push(pnl);
+      }
+      Series.Y[i] = littleSeries;
+    }
+  }
   return Series;  
 }
 
@@ -439,13 +506,17 @@ function GenerateCrossTable() {
   let sigma = txtVolatility.value / 100;
   let calPutMult = selCallPut.value;
 
+  let daysToExpiration = Number(txtDaysToExpiration.value);
+  let holdingPeriod    = Number(txtHoldingPeriod.value);
+  let expirationLeftOver = 0;
+  if(holdingPeriod < daysToExpiration)
+    expirationLeftOver = daysToExpiration - holdingPeriod;
+
   const crossTable = document.getElementById("cross-table");
   // clear old data
   crossTable.innerHTML = "";
   let axisSeries = GenerateAxisForTable();
-
   let InitialOptionPrice = CalcInitialOptionPrice();  // initial option price
-
   let header = crossTable.createTHead();
   let row = header.insertRow(0);
 
@@ -456,7 +527,6 @@ function GenerateCrossTable() {
     cell.classList.add('t-vertical');
     cell.innerHTML = item;
   });
-
 
   let isCellDark0 = false;
   // rows is being populated with days
@@ -471,7 +541,7 @@ function GenerateCrossTable() {
     axisSeries.Y.forEach( spot => {
       if(spot < 0)
         spot = 0.01;
-      let calcResultString = calcOptionMetrics(S, spot, sigma, days/365, r, 0, bs);
+      let calcResultString = calcOptionMetrics(S, spot, sigma, (days + expirationLeftOver)/365, r, 0, bs);
       let objResult        = JSON.parse(calcResultString);
       
       // TODO: sometimes result is null. need to test
