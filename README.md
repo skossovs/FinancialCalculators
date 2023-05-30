@@ -26,3 +26,9 @@ Here is the Stock Series chart indicating the stock progress, X axis indicates h
 ![StockSeries](StockSeriesSnapShot.PNG)
 On the Option Series chart the option price is indicated. The line colors correspond with the ones in Stock Series chart.
 ![OptionPriceSeries](OptionPriceSnapshot.PNG)
+Same as previous, but shows up how much profit/loss is made.
+![OptionPnLSeries](OptionPnLSnapshot.PNG)
+indicates 4 measures per one cell: Option Price, Option Expected PnL, Delta and Stock Expected PnL. X - Stock Price and Y - Days to expiration or Days to closing position.
+![CrossTableSnapshot](CrossTableSnapshot.PNG)
+### Installation
+No installation is required, just copy paste Index.html, script.js and style.css in any folder and open with a browser. I deliberately left all the code in script.js so the Index.html can be run without any additional hosting applications. From the architecture standpoint it is better to have the code properly separated by it's functionality.
