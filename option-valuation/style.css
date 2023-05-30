@@ -111,3 +111,7 @@ td{
     text-align: center;
     vertical-align: middle;
   }
+
+  .t-cell-negative-pnl{
+    color: red;
+  }

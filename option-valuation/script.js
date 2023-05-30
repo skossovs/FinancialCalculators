@@ -8,6 +8,7 @@ Date.prototype.addDays = function(days) {
 const nLines = 11;
 const selCallPut = document.getElementById("call-put-select");
 const selBuySell = document.getElementById("buy-sell-select");
+const txtHoldingPeriod = document.getElementById("holding-period-input");
 const txtExpiration = document.getElementById("expiration-input");
 const txtInterest = document.getElementById("interest-input");
 const txtDaysToExpiration = document.getElementById("days-to-expiration-input");
@@ -81,7 +82,8 @@ function render(){
     let K = txtSpot.value;
     let r = txtInterest.value / 100;
     let sigma = txtVolatility.value / 100;
-
+    
+    // initial point option metrics calculation
     let optionMetricsStr = calcOptionMetrics(S,K,sigma,T,r,0,bs);
     let optionMetrics    = JSON.parse(optionMetricsStr);
     if(selCallPut.value == "-1")
@@ -96,7 +98,6 @@ function render(){
       txtDelta.value       = optionMetrics.Dc.toFixed(4);
       txtTheta.value       = optionMetrics.ThetaC.toFixed(4);
     }
-      
 
     // ************ THIS IF is FOR DEBUGGING PURPOSES ONLY *******************************
     if(txtSpot.value != txtProjectedPrice.value){
@@ -173,6 +174,8 @@ function GenerateAxisForTable(){
   while(isDone == false && i < 11){
     let val = iterator.next();
     let price = (1 + val.value) * P0;
+    if(price < 0)
+      price = 0.01;
     isDone = val.done;
     Series.Y[i] = price.toFixed(2);
     i++;
@@ -466,6 +469,8 @@ function GenerateCrossTable() {
     let isCellDark = false;
 
     axisSeries.Y.forEach( spot => {
+      if(spot < 0)
+        spot = 0.01;
       let calcResultString = calcOptionMetrics(S, spot, sigma, days/365, r, 0, bs);
       let objResult        = JSON.parse(calcResultString);
       
@@ -481,7 +486,9 @@ function GenerateCrossTable() {
       let cell_table = document.createElement("table");
       let cell_row0  = cell_table.insertRow(-1);
       let innerCell0 = cell_row0.insertCell(0);
-      innerCell0.innerHTML = (P - InitialOptionPrice).toFixed(2);
+      innerCell0.innerHTML = (P - InitialOptionPrice).toFixed(2); // Option PnL
+      if (P - InitialOptionPrice<0)
+        innerCell0.classList.add("t-cell-negative-pnl");
       let innerCell1 = cell_row0.insertCell(0);
       innerCell1.innerHTML = P.toFixed(2);
       let cell_row1  = cell_table.insertRow(-1);
