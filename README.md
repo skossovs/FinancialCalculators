@@ -20,7 +20,7 @@ On the left side the following parameters are being entered:
 -  Volatility%        - Implied volatility in %
 -  Strike             - Option strike price  
 Then below Calculate button there are Results fields for Option Price, Delta and Theta in the starting moment.  
-Currently single leg option position with holding period matching expiration date has been implemented.  
+Currently single leg option position with holding period less or equal to expiration date has been implemented.
 ### Output Data Layout
 Here is the Stock Series chart indicating the stock progress, X axis indicates how many days left to close the position or as depicted for the option to expire. Y - stock price.
 ![StockSeries](StockSeriesSnapShot.PNG)
@@ -32,3 +32,6 @@ indicates 4 measures per one cell: Option Price, Option Expected PnL, Delta and 
 ![CrossTableSnapshot](CrossTableSnapshot.PNG)
 ### Installation
 No installation is required, just copy paste Index.html, script.js and style.css in any folder and open with a browser. I deliberately left all the code in script.js so the Index.html can be run without any additional hosting applications. From the architecture standpoint it is better to have the code properly separated by it's functionality.
+### Future Features
+- Need to have a capability to hedge first leg option with the second leg option. It will open oportunity to build vertical spreads and straddles
+- Need to implement the case when holding period is greater than expiration day for one of the legs. That will open opportunity to build calendar spread.
