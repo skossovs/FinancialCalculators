@@ -35,3 +35,4 @@ No installation is required, just copy paste Index.html, script.js and style.css
 ### Future Features
 - Need to have a capability to hedge first leg option with the second leg option. It will open oportunity to build vertical spreads and straddles
 - Need to implement the case when holding period is greater than expiration day for one of the legs. That will open opportunity to build calendar spread.
+- Currently we have days to expiration in axis X, it's needed to accompany with actual calendar dates for convinience.
