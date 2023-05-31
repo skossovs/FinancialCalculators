@@ -73,48 +73,115 @@ function openSeries(evt, tabName) {
 var chartStocks;
 var chartOptions;
 var chartOptionPnLs;
+// ------------- CLASSES  -----------------------------------------------------------------------------------------
+class OptionsViewModel {
+  interest_rate;
+  dividends;
+  holdingPeriod;
+  spot;
+  secondLeg;
+  strike;
+  strike2;
+  buySell;
+  buySell2;
+  sigma;
+  sigma2;
+  daysToExpiration;
+  daysToExpiration2;
+  calPutMult;
+  calPutMult2;
+  expirationLeftOver;
+  
+  constructor(){
+    this.interest_rate      = Number(txtInterest.value) / 100; // r
+    this.dividends          = 0;     // q
+    this.holdingPeriod      = Number(txtHoldingPeriod.value);
+    this.spot               = Number(txtSpot.value); // K
+    this.secondLeg          = chkSecondLeg.checked;
+    this.strike             = Number(txtStrike.value);
+    this.strike2            = Number(txtStrike2.value);
+    this.buySell            = selBuySell.value;
+    this.buySell2           = selBuySell2.value;
+    this.sigma              = Number(txtVolatility.value) / 100;
+    this.sigma2             = Number(txtVolatility2.value) / 100;
+    this.daysToExpiration   = Number(txtDaysToExpiration.value); // T
+    this.daysToExpiration2  = Number(txtDaysToExpiration2.value);
+    this.calPutMult         = selCallPut.value;
+    this.calPutMult2        = selCallPut2.value;
+    this.expirationLeftOver = this.daysToExpiration - this.holdingPeriod;
+  }
+  
+  CalcInitialOptionMetrics() {
+    return this.CalcOptionMetrics(this.spot, this.holdingPeriod);
+  }
+
+  CalcOptionMetrics(K,t){
+    let calcResultString = calcOptionMetrics(this.strike,K,this.sigma,(t+this.expirationLeftOver)/365,this.interest_rate,this.dividends,this.buySell);
+    let objResult        = JSON.parse(calcResultString);
+    
+    let Price = objResult.C;
+    let Delta = objResult.Dc;
+    let Theta = objResult.ThetaC;
+
+    if(this.calPutMult == "-1") {
+      Price = objResult.P;
+      Delta = objResult.Dp;
+      Theta = objResult.ThetaP;
+    }
+
+    if(this.secondLeg) {
+      calcResultString = calcOptionMetrics(this.strike2,K,this.sigma2,(t+this.expirationLeftOver)/365,this.interest_rate,this.dividends,this.buySell2);
+      objResult        = JSON.parse(calcResultString);
+      let Price2 = objResult.C;
+      let Delta2 = objResult.Dc;
+      let Theta2 = objResult.ThetaC;
+  
+      if(this.calPutMult2 == "-1") {
+          Price2 = objResult.P;
+          Delta2 = objResult.Dp;
+          Theta2 = objResult.ThetaP;
+      }
+      Price = Price + Price2;
+      Delta = Delta + Delta2;
+      Theta = Theta + Theta2;
+    }
+  
+    Price = Price.toFixed(2);
+    Delta = Delta.toFixed(4);
+    Theta = Theta; // TODO: wierd can't toFixed()
+
+    return { price: Price, delta: Delta, theta: Theta };
+  }
+
+
+}
+
 // ------------- CALCULATIONS -----------------------------------------------------------------------------------------
 function render(){
     
+  // CREATE CLASS
+  const optionsViewModel = new OptionsViewModel();
+
   if(Number(txtHoldingPeriod.value) > Number(txtDaysToExpiration.value)) {
     window.alert("Holding period is greater than days to option expiration");
     return;
   }
+  // clean off
+  if(chartStocks != null)
+    chartStocks.destroy();
+  if(chartOptions != null)
+    chartOptions.destroy();
+  if(chartOptionPnLs != null)
+    chartOptionPnLs.destroy();
+  
+  // initial point option metrics calculation
+  let InitialMetrics = optionsViewModel.CalcInitialOptionMetrics();
+  txtOptionPrice.value = InitialMetrics.price;
+  txtDelta.value       = InitialMetrics.delta;
+  txtTheta.value       = InitialMetrics.theta;
 
-    // clean off
-    if(chartStocks != null)
-      chartStocks.destroy();
-    if(chartOptions != null)
-      chartOptions.destroy();
-    if(chartOptionPnLs != null)
-      chartOptionPnLs.destroy();
-
-    let T = txtDaysToExpiration.value/365;
-    
-    let bs = selBuySell.value;
-    let S = txtStrike.value;
-    let K = txtSpot.value;
-    let r = txtInterest.value / 100;
-    let sigma = txtVolatility.value / 100;
-    
-    // initial point option metrics calculation
-    let optionMetricsStr = calcOptionMetrics(S,K,sigma,T,r,0,bs);
-    let optionMetrics    = JSON.parse(optionMetricsStr);
-    if(selCallPut.value == "-1")
-    {
-      txtOptionPrice.value = optionMetrics.P.toFixed(2);
-      txtDelta.value       = optionMetrics.Dp.toFixed(4);
-      txtTheta.value       = optionMetrics.ThetaP.toFixed(4);
-    }
-    else
-    {
-      txtOptionPrice.value = optionMetrics.C.toFixed(2);
-      txtDelta.value       = optionMetrics.Dc.toFixed(4);
-      txtTheta.value       = optionMetrics.ThetaC.toFixed(4);
-    }
-    
     // Display graphs
-    let LC = GenerateLabelsAndColors();
+  let LC = GenerateLabelsAndColors();
 
     // Stock Series
     let stockSeries = GenerateStockSeries();
@@ -128,7 +195,7 @@ function render(){
     chartStocks = new Chart(ctx,cfg);
     
     // Option Series
-    let optionSeries = GenerateOptionSeries(stockSeries);
+    let optionSeries = GenerateOptionSeries(optionsViewModel, stockSeries);
     let ctxOption = document.getElementById('OptionSeriesChart');
     let cfgOption = CreateConfig();
     AddLabels(cfgOption, labels);
@@ -289,7 +356,7 @@ function onSecondLegChecked(){
     txtVolatility2.disabled = false;
     txtVolatility2.value = txtVolatility.value;
     txtStrike2.disabled = false;
-    txtStrike.value = txtStrike2.value;
+    txtStrike2.value = txtStrike.value;
   } else {
     selCallPut2.disabled = true;
     selBuySell2.disabled = true;
@@ -422,14 +489,19 @@ function GenerateStockSeries()
   return Series;
 }
 
-function GenerateOptionSeries(stockSeries){
+function GenerateOptionSeries(optionsViewModel, stockSeries){
   let daysToExpiration = Number(txtDaysToExpiration.value);
   let holdingPeriod    = Number(txtHoldingPeriod.value);
-  let S = txtStrike.value;
-  let bs = selBuySell.value;
+  let secondLeg        = chkSecondLeg.checked;
+  let S   = txtStrike.value;
+  let S2  = txtStrike2.value;
+  let bs  = selBuySell.value;
+  let bs2 = selBuySell2.value;
   let r = txtInterest.value / 100;
   let sigma = txtVolatility.value / 100;
+  let sigma2 = txtVolatility2.value / 100;
   let calPutMult = selCallPut.value;
+  let calPutMult2 = selCallPut2.value;
 
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   if (holdingPeriod == daysToExpiration) {
@@ -441,15 +513,26 @@ function GenerateOptionSeries(stockSeries){
       let littleSeries = [];
       for(x = 0; x <= daysToExpiration; x++) {
         let K = stockSeries.Y[i][x];
-          let calcResultString = calcOptionMetrics(S,K,sigma,x/365,r,0,bs);
-          let objResult        = JSON.parse(calcResultString);
-        
-        let P = objResult.C;
-          if(calPutMult == "-1")
-            P = objResult.P;  
-        
-          littleSeries.push(P);
-        }
+        let optMetrics = optionsViewModel.CalcOptionMetrics(K,x);
+///////////////////////////////////////////////////////////        
+        // let calcResultString = calcOptionMetrics(S,K,sigma,x/365,r,0,bs);
+        // let objResult        = JSON.parse(calcResultString);
+        // let P = objResult.C;
+        // if(calPutMult == "-1")
+        //   P = objResult.P;
+
+        // if(secondLeg) {
+        //   calcResultString = calcOptionMetrics(S2,K,sigma2,x/365,r,0,bs2);
+        //   objResult        = JSON.parse(calcResultString);
+        //   let P2 = objResult.C;
+        //   if(calPutMult2 == "-1")
+        //     P2 = objResult.P;
+        //   littleSeries.push(P+P2);
+        // } else 
+        //   littleSeries.push(P);
+///////////////////////////////////////////////////////////
+        littleSeries.push(optMetrics.price);
+      }
       Series.Y[i] = littleSeries;
     }
   }
@@ -457,19 +540,20 @@ function GenerateOptionSeries(stockSeries){
     for(x = 0; x <= holdingPeriod; x++) {
       Series.X.push(x);
     }
-    let expirationLeftOver = daysToExpiration - holdingPeriod;
+    // let expirationLeftOver = daysToExpiration - holdingPeriod;
     for(let i = 0; i < nLines; i++){
       let littleSeries = [];
       for(x = 0; x <= holdingPeriod; x++) {
         let K = stockSeries.Y[i][x];
-        let calcResultString = calcOptionMetrics(S,K,sigma,(x+expirationLeftOver)/365,r,0,bs);
-        let objResult        = JSON.parse(calcResultString);
+        // let calcResultString = calcOptionMetrics(S,K,sigma,(x+expirationLeftOver)/365,r,0,bs);
+        // let objResult        = JSON.parse(calcResultString);
         
-        let P = objResult.C;
-          if(calPutMult == "-1")
-            P = objResult.P;  
+        // let P = objResult.C;
+        //   if(calPutMult == "-1")
+        //     P = objResult.P;  
         
-          littleSeries.push(P);
+        let optMetrics = optionsViewModel.CalcOptionMetrics(K,x);
+        littleSeries.push(optMetrics.price);
         }
       Series.Y[i] = littleSeries;
     }
@@ -486,23 +570,33 @@ function CalcInitialOptionPrice(){
   let sigma = txtVolatility.value / 100;
   let T = txtDaysToExpiration.value;
   let calPutMult = selCallPut.value;
+  let secondLeg        = chkSecondLeg.checked;
+  let S2  = txtStrike2.value;
+  let bs2 = selBuySell2.value;
+  let sigma2 = txtVolatility2.value / 100;
+  let calPutMult2 = selCallPut2.value;
 
   let calcResultString = calcOptionMetrics(S,K,sigma,T/365,r,0,bs);
   let objResult        = JSON.parse(calcResultString);
   let Price = objResult.C;
   if(calPutMult == "-1")
     Price = objResult.P;
+
+  if(secondLeg) {
+    calcResultString = calcOptionMetrics(S2,K,sigma2,T/365,r,0,bs2);
+    objResult        = JSON.parse(calcResultString);
+    let P2 = objResult.C;
+    if(calPutMult2 == "-1")
+      P2 = objResult.P;
+    Price = Price + P2;
+  } 
+
   return Price;
 }
 
 function GenerateOptionPnLSeries(optionSeries) {
-  let S = txtStrike.value;
-  let K = txtSpot.value;
-  let r = txtInterest.value / 100;
-  let sigma = txtVolatility.value / 100;
   let daysToExpiration = Number(txtDaysToExpiration.value);
   let holdingPeriod    = Number(txtHoldingPeriod.value);
-  let calPutMult = selCallPut.value;
 
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   for(x = 0; x <= holdingPeriod; x++) {
