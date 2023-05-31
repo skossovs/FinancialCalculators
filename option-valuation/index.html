@@ -37,6 +37,7 @@
                         <label for="projected-percentage-input">Projected %:</label>
                         <input id="projected-percentage-input" type="text" disabled>
                     </div>
+                    <hr style="width:50%;text-align:left;margin-left:0">
                     <div class="data-entry">
                         <label for="buy-sell-select">Buy/Sell:</label>
                         <select id="buy-sell-select">
@@ -67,9 +68,43 @@
                         <label for="strike-input">Strike:</label>
                         <input id="strike-input" type="text" value="35">
                     </div>
-            
-                    <button type="button" onclick="render()">Calculate</button>
                     <hr style="width:50%;text-align:left;margin-left:0">
+                    <div class="data-section-header">
+                        <label for="second-leg">Second Leg Option</label>
+                        <input id="second-leg" type="checkbox" onchange="onSecondLegChecked()">
+                    </div>
+                    <div class="data-entry">
+                        <label for="buy-sell-select-2">Buy/Sell:</label>
+                        <select id="buy-sell-select-2" disabled>
+                            <option value="1">Buy</option>
+                            <option value="-1">Sell</option>
+                        </select>
+                    </div>
+                    <div class="data-entry">
+                        <label for="call-put-select-2">Call/Put:</label>
+                        <select id="call-put-select-2" disabled>
+                            <option value="1">Call</option>
+                            <option value="-1">Put</option>
+                        </select>
+                    </div>
+                    <div class="data-entry">
+                        <label for="expiration-input-2">Expiration:</label>
+                        <input id="expiration-input-2" type="date"  disabled>
+                    </div>
+                    <div class="data-out">
+                        <label for="days-to-expiration-input-2">Days to expiration:</label>
+                        <input id="days-to-expiration-input-2" type="text" disabled>
+                    </div>
+                    <div class="data-entry">
+                        <label for="volatility-input-2">Volatility %:</label>
+                        <input id="volatility-input-2" type="text" disabled>
+                    </div>
+                    <div class="data-entry">
+                        <label for="strike-input-2">Strike:</label>
+                        <input id="strike-input-2" type="text" disabled>
+                    </div>
+                    <hr style="width:50%;text-align:left;margin-left:0">
+                    <button type="button" onclick="render()">Calculate</button>
                     <div class="data-out">
                         <label for="option-price-input">Option Price:</label>
                         <input id="option-price-input" type="text" disabled>

@@ -20,6 +20,14 @@ const txtProjectedPricePercenatage = document.getElementById("projected-percenta
 const txtDelta = document.getElementById("option-delta-input");
 const txtTheta = document.getElementById("option-theta-input");
 
+const chkSecondLeg = document.getElementById("second-leg");
+const selCallPut2 = document.getElementById("call-put-select-2");
+const selBuySell2 = document.getElementById("buy-sell-select-2");
+const txtDaysToExpiration2 = document.getElementById("days-to-expiration-input-2");
+const txtExpiration2 = document.getElementById("expiration-input-2");
+const txtVolatility2 = document.getElementById("volatility-input-2");
+const txtStrike2 = document.getElementById("strike-input-2");
+
 txtExpiration.addEventListener("input", updateExpirationDays);
 txtProjectedPrice.addEventListener("input", updateProjectedPricePercenatage);
 
@@ -264,7 +272,31 @@ function onUnLoad(){
   // document.cookie = "username=John Doe; expires=" + cookieExpirationDate;
 }
 function onLoad(){
+  txtVolatility2.value = txtVolatility.value;
+  txtStrike2.value     = txtStrike.value;
+}
 
+function onSecondLegChecked(){
+  if (chkSecondLeg.checked == true) {
+    selCallPut2.disabled = false;
+    selCallPut2.value = selCallPut.value;
+    selBuySell2.disabled = false;
+    
+    selBuySell2.value = (selBuySell.value == "1" ? "-1" : "1");
+    txtExpiration2.disabled = false;
+    txtExpiration2.value = txtExpiration.value;
+    txtDaysToExpiration2.value = txtDaysToExpiration.value;
+    txtVolatility2.disabled = false;
+    txtVolatility2.value = txtVolatility.value;
+    txtStrike2.disabled = false;
+    txtStrike.value = txtStrike2.value;
+  } else {
+    selCallPut2.disabled = true;
+    selBuySell2.disabled = true;
+    txtExpiration2.disabled = true;
+    txtVolatility2.disabled = true;
+    txtStrike2.disabled = true;
+  }
 }
 
 function CreateConfig(){
