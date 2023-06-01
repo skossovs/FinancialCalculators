@@ -124,3 +124,10 @@ td{
   .t-cell-negative-pnl{
     color: red;
   }
+
+  #second-leg-container {
+    transition: height 0.5s;
+    overflow: hidden;
+    width: 100%;
+    height: 0px;
+  }

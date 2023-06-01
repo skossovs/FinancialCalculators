@@ -307,6 +307,8 @@ function onLoad(){
 }
 
 function onSecondLegChecked(){
+  let secondLegDiv = document.getElementById("second-leg-container");
+
   if (chkSecondLeg.checked == true) {
     selCallPut2.disabled = false;
     selCallPut2.value = selCallPut.value;
@@ -320,12 +322,16 @@ function onSecondLegChecked(){
     txtVolatility2.value = txtVolatility.value;
     txtStrike2.disabled = false;
     txtStrike2.value = txtStrike.value;
+
+    let autoHeight = secondLegDiv.scrollHeight + "px";
+    secondLegDiv.style.height = autoHeight;
   } else {
     selCallPut2.disabled = true;
     selBuySell2.disabled = true;
     txtExpiration2.disabled = true;
     txtVolatility2.disabled = true;
     txtStrike2.disabled = true;
+    secondLegDiv.style.height = "0px";
   }
 }
 
