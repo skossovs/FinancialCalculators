@@ -205,7 +205,7 @@ function render(){
     chartOptions = new Chart(ctxOption,cfgOption);
 
     // Option PnLSeries
-    let optionPnLSeries = GenerateOptionPnLSeries(optionSeries);
+    let optionPnLSeries = GenerateOptionPnLSeries(optionsViewModel, optionSeries);
     let ctxOptionPnl = document.getElementById('OptionPnLSeriesChart');
     let cfgOptionPnl = CreateConfig();
     AddLabels(cfgOptionPnl, labels);
@@ -215,7 +215,7 @@ function render(){
     chartOptionPnLs = new Chart(ctxOptionPnl,cfgOptionPnl);
 
     // Cross Table
-    GenerateCrossTable();
+    GenerateCrossTable(optionsViewModel);
     
 }
 
@@ -514,23 +514,6 @@ function GenerateOptionSeries(optionsViewModel, stockSeries){
       for(x = 0; x <= daysToExpiration; x++) {
         let K = stockSeries.Y[i][x];
         let optMetrics = optionsViewModel.CalcOptionMetrics(K,x);
-///////////////////////////////////////////////////////////        
-        // let calcResultString = calcOptionMetrics(S,K,sigma,x/365,r,0,bs);
-        // let objResult        = JSON.parse(calcResultString);
-        // let P = objResult.C;
-        // if(calPutMult == "-1")
-        //   P = objResult.P;
-
-        // if(secondLeg) {
-        //   calcResultString = calcOptionMetrics(S2,K,sigma2,x/365,r,0,bs2);
-        //   objResult        = JSON.parse(calcResultString);
-        //   let P2 = objResult.C;
-        //   if(calPutMult2 == "-1")
-        //     P2 = objResult.P;
-        //   littleSeries.push(P+P2);
-        // } else 
-        //   littleSeries.push(P);
-///////////////////////////////////////////////////////////
         littleSeries.push(optMetrics.price);
       }
       Series.Y[i] = littleSeries;
@@ -545,13 +528,6 @@ function GenerateOptionSeries(optionsViewModel, stockSeries){
       let littleSeries = [];
       for(x = 0; x <= holdingPeriod; x++) {
         let K = stockSeries.Y[i][x];
-        // let calcResultString = calcOptionMetrics(S,K,sigma,(x+expirationLeftOver)/365,r,0,bs);
-        // let objResult        = JSON.parse(calcResultString);
-        
-        // let P = objResult.C;
-        //   if(calPutMult == "-1")
-        //     P = objResult.P;  
-        
         let optMetrics = optionsViewModel.CalcOptionMetrics(K,x);
         littleSeries.push(optMetrics.price);
         }
@@ -562,39 +538,39 @@ function GenerateOptionSeries(optionsViewModel, stockSeries){
   return Series;
 }
 
-function CalcInitialOptionPrice(){
-  let S = txtStrike.value;
-  let K = txtSpot.value;
-  let bs = selBuySell.value;
-  let r = txtInterest.value / 100;
-  let sigma = txtVolatility.value / 100;
-  let T = txtDaysToExpiration.value;
-  let calPutMult = selCallPut.value;
-  let secondLeg        = chkSecondLeg.checked;
-  let S2  = txtStrike2.value;
-  let bs2 = selBuySell2.value;
-  let sigma2 = txtVolatility2.value / 100;
-  let calPutMult2 = selCallPut2.value;
+// function CalcInitialOptionPrice(){
+//   let S = txtStrike.value;
+//   let K = txtSpot.value;
+//   let bs = selBuySell.value;
+//   let r = txtInterest.value / 100;
+//   let sigma = txtVolatility.value / 100;
+//   let T = txtDaysToExpiration.value;
+//   let calPutMult = selCallPut.value;
+//   let secondLeg        = chkSecondLeg.checked;
+//   let S2  = txtStrike2.value;
+//   let bs2 = selBuySell2.value;
+//   let sigma2 = txtVolatility2.value / 100;
+//   let calPutMult2 = selCallPut2.value;
 
-  let calcResultString = calcOptionMetrics(S,K,sigma,T/365,r,0,bs);
-  let objResult        = JSON.parse(calcResultString);
-  let Price = objResult.C;
-  if(calPutMult == "-1")
-    Price = objResult.P;
+//   let calcResultString = calcOptionMetrics(S,K,sigma,T/365,r,0,bs);
+//   let objResult        = JSON.parse(calcResultString);
+//   let Price = objResult.C;
+//   if(calPutMult == "-1")
+//     Price = objResult.P;
 
-  if(secondLeg) {
-    calcResultString = calcOptionMetrics(S2,K,sigma2,T/365,r,0,bs2);
-    objResult        = JSON.parse(calcResultString);
-    let P2 = objResult.C;
-    if(calPutMult2 == "-1")
-      P2 = objResult.P;
-    Price = Price + P2;
-  } 
+//   if(secondLeg) {
+//     calcResultString = calcOptionMetrics(S2,K,sigma2,T/365,r,0,bs2);
+//     objResult        = JSON.parse(calcResultString);
+//     let P2 = objResult.C;
+//     if(calPutMult2 == "-1")
+//       P2 = objResult.P;
+//     Price = Price + P2;
+//   } 
 
-  return Price;
-}
+//   return Price;
+// }
 
-function GenerateOptionPnLSeries(optionSeries) {
+function GenerateOptionPnLSeries(optionsViewModel, optionSeries) {
   let daysToExpiration = Number(txtDaysToExpiration.value);
   let holdingPeriod    = Number(txtHoldingPeriod.value);
 
@@ -604,7 +580,8 @@ function GenerateOptionPnLSeries(optionSeries) {
   }
 
   // current option price
-  let Price = CalcInitialOptionPrice();
+  let priceObject = optionsViewModel.CalcInitialOptionMetrics();
+  let Price = priceObject.price;
   if (holdingPeriod == daysToExpiration) {
     for(let i = 0; i < nLines; i++){
       let littleSeries = [];
@@ -630,7 +607,7 @@ function GenerateOptionPnLSeries(optionSeries) {
 
 getMethods = (obj) => Object.getOwnPropertyNames(obj).filter(item => typeof obj[item] === 'function')
 
-function GenerateCrossTable() {
+function GenerateCrossTable(optionsViewModel) {
   let Spot0 = txtSpot.value;
   let S = txtStrike.value;
   let bs = selBuySell.value;
@@ -648,7 +625,8 @@ function GenerateCrossTable() {
   // clear old data
   crossTable.innerHTML = "";
   let axisSeries = GenerateAxisForTable();
-  let InitialOptionPrice = CalcInitialOptionPrice();  // initial option price
+  let optObject = optionsViewModel.CalcInitialOptionMetrics();
+  let InitialOptionPrice = optObject.price;  // initial option price
   let header = crossTable.createTHead();
   let row = header.insertRow(0);
 
@@ -673,16 +651,22 @@ function GenerateCrossTable() {
     axisSeries.Y.forEach( spot => {
       if(spot < 0)
         spot = 0.01;
-      let calcResultString = calcOptionMetrics(S, spot, sigma, (days + expirationLeftOver)/365, r, 0, bs);
-      let objResult        = JSON.parse(calcResultString);
+
+      let objResult = optionsViewModel.CalcOptionMetrics(spot, days);
+
+      // let calcResultString = calcOptionMetrics(S, spot, sigma, (days + expirationLeftOver)/365, r, 0, bs);
+      // let objResult        = JSON.parse(calcResultString);
       
       // TODO: sometimes result is null. need to test
-      let P = objResult.C ?? 0.00;
-      if(calPutMult == "-1")
-        P = objResult.P ?? 0.00;  
-      let Delta = objResult.Dc ?? 0.00;
-      if(calPutMult == "-1")
-        Delta = objResult.Dp ?? 0.00;
+      // let P = objResult.C ?? 0.00;
+      // if(calPutMult == "-1")
+      //   P = objResult.P ?? 0.00;  
+      // let Delta = objResult.Dc ?? 0.00;
+      // if(calPutMult == "-1")
+      //   Delta = objResult.Dp ?? 0.00;
+
+      let P = objResult.price;
+      let Delta = objResult.delta;
 
       cell           = row.insertCell(0);
       let cell_table = document.createElement("table");
@@ -692,12 +676,12 @@ function GenerateCrossTable() {
       if (P - InitialOptionPrice<0)
         innerCell0.classList.add("t-cell-negative-pnl");
       let innerCell1 = cell_row0.insertCell(0);
-      innerCell1.innerHTML = P.toFixed(2);
+      innerCell1.innerHTML = P;
       let cell_row1  = cell_table.insertRow(-1);
       let innerCell2 = cell_row1.insertCell(0);
       innerCell2.innerHTML = (spot - Spot0).toFixed(2);
       let innerCell3 = cell_row1.insertCell(0);
-      innerCell3.innerHTML = Delta.toFixed(2);
+      innerCell3.innerHTML = Delta;
 
       cell.innerHTML = cell_table.outerHTML;
       if(isCellDark){
