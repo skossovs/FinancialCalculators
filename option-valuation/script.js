@@ -404,33 +404,7 @@ function GenerateStockSeries()
   let percentage = 0;
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   
-  if (holdingPeriod == daysToExpiration) {
-    //kx + C = y
-    // k = P0 * perc / Days,   C = (1 - perc) * P0
-    for(x = 0; x <= daysToExpiration; x++) {
-      Series.X.push(x);
-    }
-
-    let i = 0;
-    while(true){
-      let val = iterator.next();
-      percentage = val.value;
-      if(val.done == true)
-        break;
-      C = (1 + percentage) * P0;
-      K =  - P0 * percentage/daysToExpiration;
-      let littleSeries = [];
-      for(x = 0; x <= daysToExpiration; x++) {
-        let P = K * x + C;
-        if(P<0)
-          P = 0.01; // Can't have negative price for stock
-        littleSeries.push(P);
-      }
-      Series.Y[i] = littleSeries;
-      i++;
-    }
-  }
-  else if(holdingPeriod < daysToExpiration)
+  if(holdingPeriod <= daysToExpiration)
   {
     for(x = 0; x <= holdingPeriod; x++) {
       Series.X.push(x);
@@ -463,21 +437,7 @@ function GenerateOptionSeries(optionsViewModel, stockSeries){
   let holdingPeriod    = Number(txtHoldingPeriod.value);
 
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
-  if (holdingPeriod == daysToExpiration) {
-    for(x = 0; x <= daysToExpiration; x++) {
-      Series.X.push(x);
-    }
-    for(let i = 0; i < nLines; i++){
-      let littleSeries = [];
-      for(x = 0; x <= daysToExpiration; x++) {
-        let K = stockSeries.Y[i][x];
-        let optMetrics = optionsViewModel.CalcOptionMetrics(K,x);
-        littleSeries.push(optMetrics.price);
-      }
-      Series.Y[i] = littleSeries;
-    }
-  }
-  else if(holdingPeriod < daysToExpiration) {
+  if(holdingPeriod <= daysToExpiration) {
     for(x = 0; x <= holdingPeriod; x++) {
       Series.X.push(x);
     }
@@ -507,17 +467,7 @@ function GenerateOptionPnLSeries(optionsViewModel, optionSeries) {
   // current option price
   let priceObject = optionsViewModel.CalcInitialOptionMetrics();
   let Price = priceObject.price;
-  if (holdingPeriod == daysToExpiration) {
-    for(let i = 0; i < nLines; i++){
-      let littleSeries = [];
-      for(x = 0; x <= daysToExpiration; x++) {
-        let pnl =  (optionSeries.Y[i][x] - Price);
-        littleSeries.push(pnl);
-      }
-      Series.Y[i] = littleSeries;
-    }
-  }
-  else if(holdingPeriod < daysToExpiration){
+  if(holdingPeriod <= daysToExpiration){
     for(let i = 0; i < nLines; i++){
       let littleSeries = [];
       for(x = 0; x <= holdingPeriod; x++) {
