@@ -33,6 +33,6 @@ indicates 4 measures per one cell: Option Price, Option Expected PnL, Delta and 
 ### Installation
 No installation is required, just copy paste Index.html, script.js and style.css from option-valuation folder in any folder on your computer and open with a browser. I deliberately left all the code in script.js so the Index.html can be run without any additional hosting applications. From the architecture standpoint it is better to have the code properly separated by it's functionality.
 ### Future Features
-- Need to have a capability to hedge first leg option with the second leg option. It will open oportunity to build vertical spreads and straddles
+- Need to have a capability to hedge first leg option with the second leg option. It will open oportunity to build vertical spreads and straddles. DONE.
 - Need to implement the case when holding period is greater than expiration day for one of the legs. That will open opportunity to build calendar spread.
 - Currently we have days to expiration in axis X, it's needed to accompany with actual calendar dates for convinience.

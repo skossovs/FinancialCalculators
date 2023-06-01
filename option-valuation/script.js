@@ -313,7 +313,7 @@ function onSecondLegChecked(){
     selBuySell2.disabled = false;
     
     selBuySell2.value = (selBuySell.value == "1" ? "-1" : "1");
-    txtExpiration2.disabled = false;
+    //txtExpiration2.disabled = false;   NO CALENDAR SPREADS
     txtExpiration2.value = txtExpiration.value;
     txtDaysToExpiration2.value = txtDaysToExpiration.value;
     txtVolatility2.disabled = false;
