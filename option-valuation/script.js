@@ -29,6 +29,7 @@ const txtVolatility2 = document.getElementById("volatility-input-2");
 const txtStrike2 = document.getElementById("strike-input-2");
 
 txtExpiration.addEventListener("input", updateExpirationDays);
+txtExpiration2.addEventListener("input", updateExpirationDays2);
 txtProjectedPrice.addEventListener("input", updateProjectedPricePercenatage);
 
 const colorsArray = ["rgb(241,42,7)", "rgb(241,42,7,0.8)", "rgb(241,42,7,0.6)", "rgb(241,42,7,0.4)", "rgb(241,42,7,0.2)", "rgb(11,7,243)", "rgb(21,151,4,0.2)", "rgb(21,151,4,0.4)", "rgb(21,151,4,0.6)", "rgb(21,151,4,0.8)", "rgb(21,151,4)" ];
@@ -45,6 +46,15 @@ function updateExpirationDays(){
     let diffTime = Math.abs(dmaturity - dnow);
     let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     txtDaysToExpiration.value = diffDays;
+}
+
+function updateExpirationDays2(){
+  let maturity = txtExpiration2.value;
+  let dmaturity = Date.parse(maturity);
+  let dnow  = new Date(Date.now());
+  let diffTime = Math.abs(dmaturity - dnow);
+  let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  txtDaysToExpiration2.value = diffDays;
 }
 
 function openSeries(evt, tabName) {
@@ -86,6 +96,8 @@ class OptionsViewModel {
   calPutMult;
   calPutMult2;
   expirationLeftOver;
+  expirationLeftOver2;
+
   
   constructor(){
     this.interest_rate      = Number(txtInterest.value) / 100; // r
@@ -104,15 +116,21 @@ class OptionsViewModel {
     this.calPutMult         = selCallPut.value;
     this.calPutMult2        = selCallPut2.value;
     this.expirationLeftOver = this.daysToExpiration - this.holdingPeriod;
+    this.expirationLeftOver2 = this.daysToExpiration2 - this.holdingPeriod;
   }
   
   CalcInitialOptionMetrics() {
     return this.CalcOptionMetrics(this.spot, this.holdingPeriod);
   }
 
-  CalcOptionMetrics(K,t){
-    let calcResultString = calcOptionMetrics(this.strike,K,this.sigma,(t+this.expirationLeftOver)/365,this.interest_rate,this.dividends,this.buySell);
-    let objResult        = JSON.parse(calcResultString);
+  CalcOptionMetrics(K,t,advancedK,advancedK2){
+
+    let calcResultString = "";
+    if((t+this.expirationLeftOver) > 0)
+      calcResultString = calcOptionMetrics(this.strike,K,this.sigma,(t+this.expirationLeftOver)/365,this.interest_rate,this.dividends,this.buySell);
+    else
+      calcResultString = calcOptionMetrics(this.strike,advancedK,this.sigma,0,this.interest_rate,this.dividends,this.buySell);
+    let objResult      = JSON.parse(calcResultString);
     
     let Price = objResult.C;
     let Delta = objResult.Dc;
@@ -125,8 +143,12 @@ class OptionsViewModel {
     }
 
     if(this.secondLeg) {
-      calcResultString = calcOptionMetrics(this.strike2,K,this.sigma2,(t+this.expirationLeftOver)/365,this.interest_rate,this.dividends,this.buySell2);
-      objResult        = JSON.parse(calcResultString);
+      if((t+this.expirationLeftOver2) > 0)
+        calcResultString = calcOptionMetrics(this.strike2,K,this.sigma2,(t+this.expirationLeftOver)/365,this.interest_rate,this.dividends,this.buySell2);
+      else
+        calcResultString = calcOptionMetrics(this.strike2,advancedK2,this.sigma2,0,this.interest_rate,this.dividends,this.buySell2);
+      objResult          = JSON.parse(calcResultString);
+
       let Price2 = objResult.C;
       let Delta2 = objResult.Dc;
       let Theta2 = objResult.ThetaC;
@@ -153,9 +175,8 @@ class OptionsViewModel {
 function render(){
   const optionsViewModel = new OptionsViewModel();
 
-  if(Number(txtHoldingPeriod.value) > Number(txtDaysToExpiration.value)) {
-    window.alert("Holding period is greater than days to option expiration");
-    return;
+  if(Number(txtHoldingPeriod.value) > Number(txtDaysToExpiration.value) || Number(txtHoldingPeriod.value) > Number(txtDaysToExpiration2.value)) {
+    window.alert("Holding period is greater than days to option expiration. This case is useful only for calendar spread.");
   }
   // clean off
   if(chartStocks != null)
@@ -232,18 +253,21 @@ function GenerateAxisForTable(){
   let holdingPeriod    = Number(txtHoldingPeriod.value);
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   
-  if (holdingPeriod == daysToExpiration) {
+  // if (holdingPeriod == daysToExpiration) {
+  //   //kx + C = y
+  //   // k = P0 * perc / Days,   C = (1 - perc) * P0
+  //   for(x = 0; x <= daysToExpiration; x++) {
+  //     Series.X.push(x);
+  //   }
+  // }
+  // if (holdingPeriod < daysToExpiration) {
+  
     //kx + C = y
     // k = P0 * perc / Days,   C = (1 - perc) * P0
-    for(x = 0; x <= daysToExpiration; x++) {
-      Series.X.push(x);
-    }
-  }
-  if (holdingPeriod < daysToExpiration) {
     for(x = 0; x <= holdingPeriod; x++) {
       Series.X.push(x);
     }
-  }
+  
 
   const iterator = GeneratePathPercentages();
   let i = 0;
@@ -315,7 +339,7 @@ function onSecondLegChecked(){
     selBuySell2.disabled = false;
     
     selBuySell2.value = (selBuySell.value == "1" ? "-1" : "1");
-    //txtExpiration2.disabled = false;   NO CALENDAR SPREADS
+    txtExpiration2.disabled = false; // TODO: test  CALENDAR SPREADS
     txtExpiration2.value = txtExpiration.value;
     txtDaysToExpiration2.value = txtDaysToExpiration.value;
     txtVolatility2.disabled = false;
@@ -398,14 +422,13 @@ function* GeneratePathPercentages()
 function GenerateStockSeries()
 {
   const iterator = GeneratePathPercentages();
-  let daysToExpiration = Number(txtDaysToExpiration.value);
+  //let daysToExpiration = Number(txtDaysToExpiration.value);
   let holdingPeriod    = Number(txtHoldingPeriod.value);
   let P0               = txtSpot.value;
   let percentage = 0;
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   
-  if(holdingPeriod <= daysToExpiration)
-  {
+  //if(holdingPeriod <= daysToExpiration) {
     for(x = 0; x <= holdingPeriod; x++) {
       Series.X.push(x);
     }
@@ -428,7 +451,7 @@ function GenerateStockSeries()
       Series.Y[i] = littleSeries;
       i++;
     }
-  }
+  
   return Series;
 }
 
@@ -437,20 +460,29 @@ function GenerateOptionSeries(optionsViewModel, stockSeries){
   let holdingPeriod    = Number(txtHoldingPeriod.value);
 
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
-  if(holdingPeriod <= daysToExpiration) {
+  //if(holdingPeriod <= daysToExpiration) {
     for(x = 0; x <= holdingPeriod; x++) {
       Series.X.push(x);
     }
     for(let i = 0; i < nLines; i++){
       let littleSeries = [];
+      
+      // need to take care of case when expiration date < holding date, get the spot price in advance
+      let advancedK = 0;
+      if(optionsViewModel.expirationLeftOver < 0)
+       advancedK  = stockSeries.Y[i][-optionsViewModel.expirationLeftOver];
+      let advancedK2 = 0;
+      if(optionsViewModel.expirationLeftOver2 < 0)
+        advancedK2 = stockSeries.Y[i][-optionsViewModel.expirationLeftOver2];
+
       for(x = 0; x <= holdingPeriod; x++) {
         let K = stockSeries.Y[i][x];
-        let optMetrics = optionsViewModel.CalcOptionMetrics(K,x);
+        let optMetrics = optionsViewModel.CalcOptionMetrics(K,x,advancedK,advancedK2);
         littleSeries.push(optMetrics.price);
         }
       Series.Y[i] = littleSeries;
     }
-  }
+  
 
   return Series;
 }
@@ -467,7 +499,7 @@ function GenerateOptionPnLSeries(optionsViewModel, optionSeries) {
   // current option price
   let priceObject = optionsViewModel.CalcInitialOptionMetrics();
   let Price = priceObject.price;
-  if(holdingPeriod <= daysToExpiration){
+  //if(holdingPeriod <= daysToExpiration){
     for(let i = 0; i < nLines; i++){
       let littleSeries = [];
       for(x = 0; x <= holdingPeriod; x++) {
@@ -476,7 +508,7 @@ function GenerateOptionPnLSeries(optionsViewModel, optionSeries) {
       }
       Series.Y[i] = littleSeries;
     }
-  }
+  
   return Series;  
 }
 
@@ -510,11 +542,21 @@ function GenerateCrossTable(optionsViewModel) {
     cell.innerHTML = days;
     let isCellDark = false;
 
+
+    // TODO: CALENDAR SPRED IS NOT WORKING HERE
+    // need to take care of case when expiration date < holding date, get the spot price in advance
+    let advancedK = 0;
+    if(optionsViewModel.expirationLeftOver < 0)
+      advancedK  = axisSeries.X[i][-optionsViewModel.expirationLeftOver];
+    let advancedK2 = 0;
+    if(optionsViewModel.expirationLeftOver2 < 0)
+      advancedK2 = axisSeries.X[i][-optionsViewModel.expirationLeftOver2];
+
     axisSeries.Y.forEach( spot => {
       if(spot < 0)
         spot = 0.01;
 
-      let objResult = optionsViewModel.CalcOptionMetrics(spot, days);
+      let objResult = optionsViewModel.CalcOptionMetrics(spot, days, advancedK, advancedK2);
       let P = objResult.price;
       let Delta = objResult.delta;
 
