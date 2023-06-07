@@ -10,6 +10,7 @@ const selBuySell = document.getElementById("buy-sell-select");
 const txtHoldingPeriod = document.getElementById("holding-period-input");
 const txtExpiration = document.getElementById("expiration-input");
 const txtInterest = document.getElementById("interest-input");
+const txtTicker = document.getElementById("ticker-input");
 const txtDaysToExpiration = document.getElementById("days-to-expiration-input");
 const txtVolatility = document.getElementById("volatility-input");
 const txtStrike = document.getElementById("strike-input");
@@ -317,6 +318,23 @@ function onUnLoad(){
 function onLoad(){
   txtVolatility2.value = txtVolatility.value;
   txtStrike2.value     = txtStrike.value;
+  let val = "";
+  // get the parameters
+  txtInterest.value       = getParameterByName('ir');  // Interest Rate
+  txtTicker.value         = getParameterByName('tkr'); // TICKER
+  txtProjectedPrice.value = getParameterByName('pr');  // PROJECTED PRICE
+  txtHoldingPeriod.value  = getParameterByName('hp');  // Holding Period
+  txtExpiration.value     = getParameterByName('exp'); // EXPIRATION
+  txtSpot.value           = getParameterByName("sp");  // SPOT
+  val                     = getParameterByName("bs");  // BUY SELL
+  if(val != null && val.trim() != "")
+    selBuySell.value = val;
+  val                     = getParameterByName("cp");  // CALL PUT
+  if(val != null && val.trim() != "")
+    selCallPut.value = val;
+  updateProjectedPricePercenatage();
+  updateExpirationDays();
+  updateExpirationDays2();
 }
 
 function onSecondLegChecked(){
@@ -346,6 +364,18 @@ function onSecondLegChecked(){
     txtStrike2.disabled = true;
     secondLegDiv.style.height = "0px";
   }
+}
+
+function getParameterByName(name) {
+  const url = window.location.href;
+  name = name.replace(/[\[\]]/g, '\\$&');
+  const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+  const results = regex.exec(url);
+
+  if (!results) return null;
+  if (!results[2]) return '';
+
+  return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
 
 function CreateConfig(){
