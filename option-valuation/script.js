@@ -175,7 +175,7 @@ class OptionsViewModel {
 function render(){
   const optionsViewModel = new OptionsViewModel();
 
-  if(Number(txtHoldingPeriod.value) > Number(txtDaysToExpiration.value) || Number(txtHoldingPeriod.value) > Number(txtDaysToExpiration2.value)) {
+  if(Number(txtHoldingPeriod.value) > Number(txtDaysToExpiration.value) || (Number(txtHoldingPeriod.value) > Number(txtDaysToExpiration2.value) && chkSecondLeg.checked)) {
     window.alert("Holding period is greater than days to option expiration. This case is useful only for calendar spread.");
   }
   // clean off
@@ -249,25 +249,14 @@ function GenerateLabelsAndColors(){
 
 function GenerateAxisForTable(){
   let P0 = txtSpot.value;
-  let daysToExpiration = Number(txtDaysToExpiration.value);
   let holdingPeriod    = Number(txtHoldingPeriod.value);
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   
-  // if (holdingPeriod == daysToExpiration) {
-  //   //kx + C = y
-  //   // k = P0 * perc / Days,   C = (1 - perc) * P0
-  //   for(x = 0; x <= daysToExpiration; x++) {
-  //     Series.X.push(x);
-  //   }
-  // }
-  // if (holdingPeriod < daysToExpiration) {
-  
-    //kx + C = y
-    // k = P0 * perc / Days,   C = (1 - perc) * P0
-    for(x = 0; x <= holdingPeriod; x++) {
-      Series.X.push(x);
-    }
-  
+  //kx + C = y
+  // k = P0 * perc / Days,   C = (1 - perc) * P0
+  for(x = 0; x <= holdingPeriod; x++) {
+    Series.X.push(x);
+  }
 
   const iterator = GeneratePathPercentages();
   let i = 0;
@@ -546,17 +535,24 @@ function GenerateCrossTable(optionsViewModel) {
     // TODO: CALENDAR SPRED IS NOT WORKING HERE
     // need to take care of case when expiration date < holding date, get the spot price in advance
     let advancedK = 0;
-    if(optionsViewModel.expirationLeftOver < 0)
-      advancedK  = axisSeries.X[i][-optionsViewModel.expirationLeftOver];
     let advancedK2 = 0;
-    if(optionsViewModel.expirationLeftOver2 < 0)
-      advancedK2 = axisSeries.X[i][-optionsViewModel.expirationLeftOver2];
 
     axisSeries.Y.forEach( spot => {
       if(spot < 0)
         spot = 0.01;
 
-      let objResult = optionsViewModel.CalcOptionMetrics(spot, days, advancedK, advancedK2);
+      let t = days;
+       if(optionsViewModel.expirationLeftOver < 0 && days <= optionsViewModel.daysToExpiration){
+         advancedK  = spot;
+         t = 0;
+      }
+      
+       if(optionsViewModel.expirationLeftOver2 < 0 && days <= optionsViewModel.daysToExpiration2 && chkSecondLeg.checked) {
+          advancedK2 = spot;
+          t = 0;
+      }
+
+      let objResult = optionsViewModel.CalcOptionMetrics(spot, t, advancedK, advancedK2);
       let P = objResult.price;
       let Delta = objResult.delta;
 
