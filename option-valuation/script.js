@@ -320,21 +320,38 @@ function onLoad(){
   txtStrike2.value     = txtStrike.value;
   let val = "";
   // get the parameters
-  txtInterest.value       = getParameterByName('ir');  // Interest Rate
-  txtTicker.value         = getParameterByName('tkr'); // TICKER
-  txtProjectedPrice.value = getParameterByName('pr');  // PROJECTED PRICE
-  txtHoldingPeriod.value  = getParameterByName('hp');  // Holding Period
-  txtExpiration.value     = getParameterByName('exp'); // EXPIRATION
-  txtSpot.value           = getParameterByName("sp");  // SPOT
-  val                     = getParameterByName("bs");  // BUY SELL
-  if(val != null && val.trim() != "")
-    selBuySell.value = val;
-  val                     = getParameterByName("cp");  // CALL PUT
-  if(val != null && val.trim() != "")
-    selCallPut.value = val;
+  assignConsistent(getParameterByName("ir"), txtInterest);       // Interest Rate
+  assignConsistent(getParameterByName('tkr'), txtTicker);        // TICKER
+  assignConsistent(getParameterByName('pr'), txtProjectedPrice); // PROJECTED PRICE
+  assignConsistent(getParameterByName('hp'), txtHoldingPeriod);  // Holding Period
+  assignConsistent(getParameterByName('exp'), txtExpiration);    // EXPIRATION
+  assignConsistent(getParameterByName("sp"), txtSpot);           // SPOT
+  assignConsistent(getParameterByName("bs"), selBuySell);        // BUY SELL
+  assignConsistent(getParameterByName("cp"), selCallPut);        // CALL PUT
   updateProjectedPricePercenatage();
   updateExpirationDays();
-  updateExpirationDays2();
+  assignConsistent(getParameterByName("v"), txtVolatility);      // VOLATILITY
+  assignConsistent(getParameterByName("s"), txtStrike);          // strike
+  val  = getParameterByName("sl");
+  if(val != null && val.trim() != ""){
+    chkSecondLeg.checked = getParameterByName("sl");             //second leg true/false
+    onSecondLegChecked();
+  }
+  assignConsistent(getParameterByName("bs2"), selBuySell2);      // BUY SELL SECOND LEG
+  assignConsistent(getParameterByName("cp2"), selCallPut2);      // CALL PUT SECOND LEG
+  assignConsistent(getParameterByName("v2"), txtVolatility2);    // VOLATILITY
+  assignConsistent(getParameterByName("s2"), txtStrike2);        // strike SECOND LEG
+  
+  val            = getParameterByName('exp2');                   // EXPIRATION SECOND LEG
+  if(val != null && val.trim() != ""){
+    txtExpiration2.value = val;
+    updateExpirationDays2();
+  }
+}
+
+function assignConsistent(val, assignee) {
+  if(val != null && val.trim() != "") 
+    assignee.value = val;
 }
 
 function onSecondLegChecked(){
@@ -346,7 +363,7 @@ function onSecondLegChecked(){
     selBuySell2.disabled = false;
     
     selBuySell2.value = (selBuySell.value == "1" ? "-1" : "1");
-    txtExpiration2.disabled = false; // TODO: test  CALENDAR SPREADS
+    txtExpiration2.disabled = false;
     txtExpiration2.value = txtExpiration.value;
     txtDaysToExpiration2.value = txtDaysToExpiration.value;
     txtVolatility2.disabled = false;
@@ -441,73 +458,67 @@ function* GeneratePathPercentages()
 function GenerateStockSeries()
 {
   const iterator = GeneratePathPercentages();
-  //let daysToExpiration = Number(txtDaysToExpiration.value);
   let holdingPeriod    = Number(txtHoldingPeriod.value);
   let P0               = txtSpot.value;
   let percentage = 0;
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
   
-  //if(holdingPeriod <= daysToExpiration) {
-    for(x = 0; x <= holdingPeriod; x++) {
-      Series.X.push(x);
-    }
+  for(x = 0; x <= holdingPeriod; x++) {
+    Series.X.push(x);
+  }
 
-    let i = 0;
-    while(true){
-      let val = iterator.next();
-      percentage = val.value;
-      if(val.done == true)
-        break;
-      C = (1 + percentage) * P0;
-      K =  - P0 * percentage/holdingPeriod;
-      let littleSeries = [];
-      for(x = 0; x <= holdingPeriod; x++) {
-        let P = K * x + C;
-        if(P<0)
-          P = 0.01; // Can't have negative price for stock
-        littleSeries.push(P);
-      }
-      Series.Y[i] = littleSeries;
-      i++;
+  let i = 0;
+  while(true){
+    let val = iterator.next();
+    percentage = val.value;
+    if(val.done == true)
+      break;
+    C = (1 + percentage) * P0;
+    K =  - P0 * percentage/holdingPeriod;
+    let littleSeries = [];
+    for(x = 0; x <= holdingPeriod; x++) {
+      let P = K * x + C;
+      if(P<0)
+        P = 0.01; // Can't have negative price for stock
+      littleSeries.push(P);
     }
+    Series.Y[i] = littleSeries;
+    i++;
+  }
   
   return Series;
 }
 
 function GenerateOptionSeries(optionsViewModel, stockSeries){
-  let daysToExpiration = Number(txtDaysToExpiration.value);
   let holdingPeriod    = Number(txtHoldingPeriod.value);
 
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
-  //if(holdingPeriod <= daysToExpiration) {
-    for(x = 0; x <= holdingPeriod; x++) {
-      Series.X.push(x);
-    }
-    for(let i = 0; i < nLines; i++){
-      let littleSeries = [];
-      
-      // need to take care of case when expiration date < holding date, get the spot price in advance
-      let advancedK = 0;
-      if(optionsViewModel.expirationLeftOver < 0)
-       advancedK  = stockSeries.Y[i][-optionsViewModel.expirationLeftOver];
-      let advancedK2 = 0;
-      if(optionsViewModel.expirationLeftOver2 < 0)
-        advancedK2 = stockSeries.Y[i][-optionsViewModel.expirationLeftOver2];
+  for(x = 0; x <= holdingPeriod; x++) {
+    Series.X.push(x);
+  }
+  for(let i = 0; i < nLines; i++){
+    let littleSeries = [];
+    
+    // need to take care of case when expiration date < holding date, get the spot price in advance
+    let advancedK = 0;
+    if(optionsViewModel.expirationLeftOver < 0)
+      advancedK  = stockSeries.Y[i][-optionsViewModel.expirationLeftOver];
+    let advancedK2 = 0;
+    if(optionsViewModel.expirationLeftOver2 < 0 && chkSecondLeg.checked == true)
+      advancedK2 = stockSeries.Y[i][-optionsViewModel.expirationLeftOver2];
 
-      for(x = 0; x <= holdingPeriod; x++) {
-        let K = stockSeries.Y[i][x];
-        let optMetrics = optionsViewModel.CalcOptionMetrics(K,x,advancedK,advancedK2);
-        littleSeries.push(optMetrics.price);
-        }
-      Series.Y[i] = littleSeries;
-    }
-  
+    for(x = 0; x <= holdingPeriod; x++) {
+      let K = stockSeries.Y[i][x];
+      let optMetrics = optionsViewModel.CalcOptionMetrics(K,x,advancedK,advancedK2);
+      littleSeries.push(optMetrics.price);
+      }
+    Series.Y[i] = littleSeries;
+  }
 
   return Series;
 }
 
 function GenerateOptionPnLSeries(optionsViewModel, optionSeries) {
-  let daysToExpiration = Number(txtDaysToExpiration.value);
   let holdingPeriod    = Number(txtHoldingPeriod.value);
 
   let Series = { X : [], Y : [null, null, null, null, null, null, null, null, null, null, null]};
@@ -518,15 +529,14 @@ function GenerateOptionPnLSeries(optionsViewModel, optionSeries) {
   // current option price
   let priceObject = optionsViewModel.CalcInitialOptionMetrics();
   let Price = priceObject.price;
-  //if(holdingPeriod <= daysToExpiration){
-    for(let i = 0; i < nLines; i++){
-      let littleSeries = [];
-      for(x = 0; x <= holdingPeriod; x++) {
-        let pnl =  (optionSeries.Y[i][x] - Price);
-        littleSeries.push(pnl);
-      }
-      Series.Y[i] = littleSeries;
+  for(let i = 0; i < nLines; i++){
+    let littleSeries = [];
+    for(x = 0; x <= holdingPeriod; x++) {
+      let pnl =  (optionSeries.Y[i][x] - Price);
+      littleSeries.push(pnl);
     }
+    Series.Y[i] = littleSeries;
+  }
   
   return Series;  
 }
@@ -560,10 +570,6 @@ function GenerateCrossTable(optionsViewModel) {
     cell.classList.add('t-horizontal'); // row headers are styled here
     cell.innerHTML = days;
     let isCellDark = false;
-
-
-    // TODO: CALENDAR SPRED IS NOT WORKING HERE
-    // need to take care of case when expiration date < holding date, get the spot price in advance
     let advancedK = 0;
     let advancedK2 = 0;
 
