@@ -125,7 +125,7 @@ class OptionsViewModel {
   }
 
   CalcOptionMetrics(K,t,advancedK,advancedK2){
-
+    
     let calcResultString = "";
     if((t+this.expirationLeftOver) > 0)
       calcResultString = calcOptionMetrics(this.strike,K,this.sigma,(t+this.expirationLeftOver)/365,this.interest_rate,this.dividends,this.buySell);
@@ -136,7 +136,7 @@ class OptionsViewModel {
     let Price = objResult.C;
     let Delta = objResult.Dc;
     let Theta = objResult.ThetaC;
-
+    
     if(this.calPutMult == "-1") {
       Price = objResult.P;
       Delta = objResult.Dp;
@@ -145,7 +145,7 @@ class OptionsViewModel {
 
     if(this.secondLeg) {
       if((t+this.expirationLeftOver2) > 0)
-        calcResultString = calcOptionMetrics(this.strike2,K,this.sigma2,(t+this.expirationLeftOver)/365,this.interest_rate,this.dividends,this.buySell2);
+        calcResultString = calcOptionMetrics(this.strike2,K,this.sigma2,(t+this.expirationLeftOver2)/365,this.interest_rate,this.dividends,this.buySell2);
       else
         calcResultString = calcOptionMetrics(this.strike2,advancedK2,this.sigma2,0,this.interest_rate,this.dividends,this.buySell2);
       objResult          = JSON.parse(calcResultString);
